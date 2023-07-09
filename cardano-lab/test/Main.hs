@@ -1,6 +1,8 @@
 module Main where
 
 import Prelude
+import qualified Spec
+import Test.Hspec.Runner
 
 main :: IO ()
-main = error "todo"
+main = hspecWith defaultConfig Spec.spec
