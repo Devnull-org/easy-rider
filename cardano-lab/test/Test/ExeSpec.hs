@@ -8,4 +8,4 @@ spec :: Spec
 spec =
   describe "cardano-lib executable can be started" $
     it "should be able to call cardano-lab executable" $
-      callProcess "cardano-lab" [] `shouldReturn` ()
+      callProcess "cabal" ["run", "cardano-lab"] `shouldReturn` ()
