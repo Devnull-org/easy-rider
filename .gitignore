@@ -1,0 +1,31 @@
+# Cabal
+.ghc.environment.*
+/cabal.project.diff
+/cabal.project.local
+/cabal.project.old
+/dist-newstyle/
+
+# Haskell
+*.eventlog
+*.hp
+*.prof
+.hspec-failures
+
+# Nix
+result*
+
+# Direnv
+.direnv/
+*~
+
+# hydra-node
+.history
+*.hi
+*.o
+test-results.xml
+hspec-results.md
+
+# Benchmark results
+*.html
+!index.html
+
