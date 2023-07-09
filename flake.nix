@@ -22,8 +22,6 @@
     flake-utils.lib.eachSystem [
       "x86_64-linux"
       "x86_64-darwin"
-      # XXX: Disabled until cardano-node releases a verison supporting this
-      # "aarch64-darwin"
     ]
       (system:
       let
@@ -31,7 +29,6 @@
         cardanoLabProject = import ./nix/cardano-lab/project.nix {
           inherit (inputs) haskellNix iohk-nix CHaP;
           inherit system nixpkgs;
-          gitRev = self.rev or "dirty";
         };
         cardanoLabPackages = import ./nix/cardano-lab/packages.nix {
           inherit cardanoLabProject system pkgs cardano-node;
@@ -54,13 +51,11 @@
   nixConfig = {
     extra-substituters = [
       "https://cache.iog.io"
-      "https://hydra-node.cachix.org"
       "https://cardano-scaling.cachix.org"
       "https://cache.zw3rk.com"
     ];
     extra-trusted-public-keys = [
       "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
-      "hydra-node.cachix.org-1:vK4mOEQDQKl9FTbq76NjOuNaRD4pZLxi1yri31HHmIw="
       "cardano-scaling.cachix.org-1:RKvHKhGs/b6CBDqzKbDk0Rv6sod2kPSXLwPzcUQg9lY="
       "loony-tools:pr9m4BkM/5/eSTZlkQyRt57Jz7OMBxNSUiMC4FkcNfk="
     ];

@@ -1,16 +1,9 @@
 { compiler ? "ghc8107"
-
 , system ? builtins.currentSystem
-
 , haskellNix
-
 , iohk-nix
-
 , CHaP
-
 , nixpkgs ? iohk-nix.nixpkgs
-
-, gitRev ? ""
 }:
 let
   pkgs = import nixpkgs {

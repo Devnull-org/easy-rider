@@ -34,7 +34,6 @@ let
     pkgs.haskellPackages.hspec-discover
     pkgs.haskellPackages.cabal-plan
     pkgs.python3Packages.jsonschema
-    pkgs.plantuml
     cardano-node-pkgs.cardano-node
   ];
 

@@ -11,10 +11,10 @@ let
   musl64Pkgs = patchedForCrossProject.projectCross.musl64.hsPkgs;
 in
 rec {
-  cardano-lab = nativePkgs.hydra-node.components.exes.cardano-lab;
+  cardano-lab = nativePkgs.cardano-lab.components.exes.cardano-lab;
 
   tests = {
-    hydra-node = pkgs.mkShellNoCC {
+    cardano-lab = pkgs.mkShellNoCC {
       name = "cardano-lab-tests";
       buildInputs = [ nativePkgs.cardano-lab.components.tests.tests ];
     };
@@ -23,8 +23,8 @@ rec {
   haddocks = pkgs.runCommand "cardano-lab-haddocks"
     {
       paths = [
-        hydraProject.hsPkgs.cardano-lab.components.library.doc
-        hydraProject.hsPkgs.hydra-lab.components.tests.tests.doc
+        cardanoLabProject.hsPkgs.cardano-lab.components.library.doc
+        cardanoLabProject.hsPkgs.cardano-lab.components.tests.tests.doc
       ];
     }
     ''
