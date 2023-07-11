@@ -59,12 +59,22 @@ common project-config
 library
   import: project-config
   hs-source-dirs:  src
-  exposed-modules: Lab
+  exposed-modules: 
+    Lab
+    Cardano.Node
   build-depends:
+     async
+   , base
    , cardano-api                     >=1.36.0
    , cardano-binary                  >=1.5.0
    , cardano-crypto-class            >=2.0.0
+   , cardano-prelude
+   , directory
    , plutus-ledger-api               >=1.1.0.0
+   , process
+   , text
+   , filepath
+
   ghc-options:     -haddock
 
 executable cardano-lab
