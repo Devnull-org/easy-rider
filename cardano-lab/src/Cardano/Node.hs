@@ -17,26 +17,43 @@ import Cardano.Api (
     localNodeNetworkId,
     localNodeSocketPath
   ),
-  NetworkId (Testnet),
-  connectToLocalNode, NetworkMagic (NetworkMagic)
+  NetworkId (Mainnet, Testnet),
+  NetworkMagic (NetworkMagic),
+  connectToLocalNode,
  )
-import Control.Concurrent.Async (race)
+import Cardano.Prelude (unlessM, void, whenM)
+import Control.Concurrent (ThreadId, threadDelay)
+import Control.Concurrent.Async (Async, async, cancel, race)
+import Control.Exception (finally)
 import Data.Text (Text)
 import Data.Void (Void)
 import GHC.IO.Exception (ExitCode (..))
+import System.Directory (doesFileExist, getCurrentDirectory, removeFile)
 import System.FilePath ((</>))
-import System.Process (CreateProcess (..), ProcessHandle, StdStream (..), withCreateProcess, proc, waitForProcess)
+import System.Process (CreateProcess (..), ProcessHandle, StdStream (..), proc, waitForProcess, withCreateProcess)
 import Prelude
-import Control.Exception (finally)
-import Control.Concurrent (threadDelay)
-import System.Directory (doesFileExist, removeFile, getCurrentDirectory)
-import Cardano.Prelude (whenM, unlessM)
+
+data NodeHandle a = NodeHandle
+  { startNode :: IO (Async a)
+  , stopNode :: Async a -> IO ()
+  }
+
+mkNodeHandle ::
+  NetworkId ->
+  FilePath ->
+  FilePath ->
+  IO a ->
+  IO (NodeHandle a)
+mkNodeHandle networkId stateDirectory nodeSocket action = do
+  let startNode = async $ withCardanoNode networkId stateDirectory nodeSocket action
+  let stopNode = cancel 
+  pure $ NodeHandle startNode stopNode
 
 withCardanoNode ::
   NetworkId ->
   FilePath ->
   FilePath ->
-  IO a -> 
+  IO a ->
   IO a
 withCardanoNode networkId stateDirectory nodeSocket action = do
   p <- process
@@ -44,36 +61,38 @@ withCardanoNode networkId stateDirectory nodeSocket action = do
     \_stdin _stdout _stderr processHandle ->
       ( race
           (checkProcessHasNotDied "cardano-node" processHandle)
-          waitForNode 
+          waitForNode
           >>= \case
             Left{} -> error "never should have been reached"
             Right a -> pure a
       )
         `finally` cleanupSocketFile
  where
-  process = do 
+  process = do
     cwd <- getCurrentDirectory
-    pure $ 
-      cardanoNodeProcess 
-        (Just stateDirectory) 
-        (defaultCardanoNodeArgs $ networkIdToNodeConfigPath cwd networkId) 
+    pure $
+      cardanoNodeProcess
+        (Just stateDirectory)
+        (defaultCardanoNodeArgs $ networkIdToNodeConfigPath cwd networkId)
 
   socketPath = stateDirectory </> nodeSocket
 
   waitForNode = do
     waitForSocket nodeSocket
-    action 
+    action
 
   cleanupSocketFile =
     whenM (doesFileExist socketPath) $
       removeFile socketPath
 
-  networkIdToNodeConfigPath cwd network = 
-     let basePath = cwd </> "config" </> "cardano-configurations" </> "network" 
-     in
-      case network of
-        Testnet (NetworkMagic 2) -> basePath </> "preview" </> "cardano-node"
-        _ -> error "cardano-node only runs on preprod for now"
+  networkIdToNodeConfigPath cwd network =
+    let basePath = cwd </> "cardano-lab" </> "config" </> "cardano-configurations" </> "network"
+     in case network of
+          Mainnet -> basePath </> "mainnet" </> "cardano-node"
+          Testnet (NetworkMagic 1) -> basePath </> "preprod" </> "cardano-node"
+          Testnet (NetworkMagic 2) -> basePath </> "preview" </> "cardano-node"
+          Testnet (NetworkMagic 1097911063) -> basePath </> "testnet" </> "cardano-node"
+          _ -> error "TODO: implement running on devnet"
 
 -- | Wait for the node socket file to become available.
 waitForSocket :: FilePath -> IO ()
