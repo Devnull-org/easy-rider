@@ -2,28 +2,29 @@ module Lab where
 
 import Cardano.Prelude
 
-import Cardano.Node (NodeArguments, runCardanoNode)
+import Cardano.Node (CardanoNodeResult (Done), NodeArguments, runCardanoNode)
 import Control.Monad.Free (Free (..), foldFree)
 
 data CardanoNodeF next
-  = Start (Async Int -> next)
-  | Stop (Async Int) next
-  deriving (Functor)
+  = Start (Async CardanoNodeResult -> next)
+  | Stop (Async CardanoNodeResult) next
+
+deriving instance Functor CardanoNodeF
 
 type CardanoNode = Free CardanoNodeF
 
-startTheNode :: CardanoNode (Async Int)
+startTheNode :: CardanoNode (Async CardanoNodeResult)
 startTheNode = Free $ Start Pure
 
-stopTheNode :: Async Int -> CardanoNode ()
-stopTheNode a = Free $ Stop a (Pure ())
+stopTheNode :: Async CardanoNodeResult -> CardanoNode CardanoNodeResult
+stopTheNode a = Free $ Stop a (Pure Done)
 
-program :: CardanoNode ()
+program :: CardanoNode CardanoNodeResult
 program = do
   res <- startTheNode
   stopTheNode res
 
-interpret :: NodeArguments -> CardanoNode a -> IO a
+interpret :: NodeArguments -> CardanoNode CardanoNodeResult -> IO CardanoNodeResult
 interpret na = foldFree go
  where
   go :: CardanoNodeF a -> IO a

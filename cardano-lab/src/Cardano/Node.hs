@@ -22,17 +22,12 @@ import Cardano.Api (
   NetworkMagic (NetworkMagic),
   connectToLocalNode,
  )
-import Cardano.Prelude (Word64, traceShow, unlessM, whenM)
-import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (Async, async, cancel, race)
-import Control.Exception (finally)
-import Data.Text (Text)
-import Data.Void (Void)
-import GHC.IO.Exception (ExitCode (..))
+import Cardano.Prelude
+import Cardano.Util (checkProcessHasNotDied)
 import System.Directory (doesFileExist, getCurrentDirectory, removeFile)
 import System.FilePath ((</>))
-import System.Process (CreateProcess (..), ProcessHandle, StdStream (..), proc, waitForProcess, withCreateProcess)
-import Prelude
+import System.Process (CreateProcess (..), StdStream (..), proc, withCreateProcess)
+import Prelude (error)
 
 data NodeArguments = NodeArguments
   { naNetworkId :: NetworkId
@@ -40,6 +35,35 @@ data NodeArguments = NodeArguments
   , naStateDirectory :: FilePath
   }
   deriving (Eq, Show)
+
+data NodeHandle a = NodeHandle
+  { startNode :: IO (Async a)
+  , stopNode :: Async a -> IO ()
+  }
+
+-- | All possible outcomes from syncing the cardano-node
+data CardanoNodeResult
+  = Done
+  deriving (Eq,Show)
+
+type Port = Int
+
+-- | Arguments given to the 'cardano-node' command-line to run a node.
+data CardanoNodeArgs = CardanoNodeArgs
+  { nodeSocket :: FilePath
+  , nodeConfigFile :: FilePath
+  , nodeByronGenesisFile :: FilePath
+  , nodeShelleyGenesisFile :: FilePath
+  , nodeAlonzoGenesisFile :: FilePath
+  , nodeTopologyFile :: FilePath
+  , nodeDatabaseDir :: FilePath
+  , nodeDlgCertFile :: Maybe FilePath
+  , nodeSignKeyFile :: Maybe FilePath
+  , nodeOpCertFile :: Maybe FilePath
+  , nodeKesKeyFile :: Maybe FilePath
+  , nodeVrfKeyFile :: Maybe FilePath
+  , nodePort :: Maybe Port
+  }
 
 defaultNodeArguments :: NodeArguments
 defaultNodeArguments =
@@ -49,25 +73,20 @@ defaultNodeArguments =
     , naStateDirectory = "/tmp"
     }
 
-data NodeHandle a = NodeHandle
-  { startNode :: IO (Async a)
-  , stopNode :: Async a -> IO ()
-  }
-
 mkNodeHandle ::
   NodeArguments ->
-  IO (NodeHandle Int)
+  IO (NodeHandle CardanoNodeResult)
 mkNodeHandle na = do
   let startNode = async $ withCardanoNode na
   let stopNode = cancel
   pure $ NodeHandle startNode stopNode
 
-runCardanoNode :: NodeArguments -> IO Int
+runCardanoNode :: NodeArguments -> IO CardanoNodeResult
 runCardanoNode = withCardanoNode
 
 withCardanoNode ::
   NodeArguments ->
-  IO Int
+  IO CardanoNodeResult
 withCardanoNode NodeArguments{naNetworkId, naNodeSocket, naStateDirectory} = do
   p <- process
   withCreateProcess p{std_out = Inherit, std_err = Inherit} $
@@ -92,7 +111,7 @@ withCardanoNode NodeArguments{naNetworkId, naNodeSocket, naStateDirectory} = do
 
   waitForNode = do
     waitForSocket naNodeSocket
-    pure 1
+    pure Done
 
   cleanupSocketFile =
     whenM (doesFileExist socketPath) $
@@ -122,25 +141,6 @@ waitForSocket nodeSocket =
   unlessM (doesFileExist nodeSocket) $ do
     threadDelay 1
     waitForSocket nodeSocket
-
-type Port = Int
-
--- | Arguments given to the 'cardano-node' command-line to run a node.
-data CardanoNodeArgs = CardanoNodeArgs
-  { nodeSocket :: FilePath
-  , nodeConfigFile :: FilePath
-  , nodeByronGenesisFile :: FilePath
-  , nodeShelleyGenesisFile :: FilePath
-  , nodeAlonzoGenesisFile :: FilePath
-  , nodeTopologyFile :: FilePath
-  , nodeDatabaseDir :: FilePath
-  , nodeDlgCertFile :: Maybe FilePath
-  , nodeSignKeyFile :: Maybe FilePath
-  , nodeOpCertFile :: Maybe FilePath
-  , nodeKesKeyFile :: Maybe FilePath
-  , nodeVrfKeyFile :: Maybe FilePath
-  , nodePort :: Maybe Port
-  }
 
 defaultCardanoNodeArgs :: FilePath -> CardanoNodeArgs
 defaultCardanoNodeArgs nodeConfigPath =
@@ -216,9 +216,3 @@ connectCardanoNode networkId nodeSocket =
       , localStateQueryClient = Nothing
       , localTxMonitoringClient = Nothing
       }
-
-checkProcessHasNotDied :: Text -> ProcessHandle -> IO Void
-checkProcessHasNotDied name processHandle =
-  waitForProcess processHandle >>= \case
-    ExitSuccess -> error "Process has died"
-    ExitFailure exit -> error $ "Process " <> show name <> " exited with failure code: " <> show exit

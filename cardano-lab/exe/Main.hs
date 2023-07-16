@@ -1,5 +1,3 @@
-
-
 module Main where
 
 import Cardano.Api (NetworkId (Testnet), NetworkMagic (NetworkMagic))
@@ -18,4 +16,5 @@ main = do
   -- nodeHandle <- startNode
   -- threadDelay 5000000
   -- stopNode nodeHandle
-  interpret defaultNodeArguments program
+  result <- interpret defaultNodeArguments program
+  print result
