@@ -74,6 +74,7 @@ library
    , process
    , text
    , filepath
+   , free
 
   ghc-options:     -haddock
 

@@ -10,6 +10,7 @@
       flake = false;
     };
     cardano-node.url = "github:input-output-hk/cardano-node/1.35.7";
+    mithril.url = "github:input-output-hk/mithril/2327.0";
   };
 
   outputs =
@@ -17,6 +18,7 @@
     , flake-utils
     , nixpkgs
     , cardano-node
+    , mithril
     , ...
     } @ inputs:
     flake-utils.lib.eachSystem [
@@ -31,7 +33,7 @@
           inherit system nixpkgs;
         };
         cardanoLabPackages = import ./nix/cardano-lab/packages.nix {
-          inherit cardanoLabProject system pkgs cardano-node;
+          inherit cardanoLabProject system pkgs cardano-node mithril;
         };
         prefixAttrs = s: attrs:
           with pkgs.lib.attrsets;
@@ -43,7 +45,7 @@
         packages = cardanoLabPackages;
 
         devShells = (import ./nix/cardano-lab/shell.nix {
-          inherit (inputs) cardano-node;
+          inherit (inputs) cardano-node mithril;
           inherit cardanoLabProject system;
         }); 
       });

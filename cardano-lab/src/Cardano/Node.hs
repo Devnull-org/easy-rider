@@ -1,6 +1,7 @@
 module Cardano.Node where
 
 import Cardano.Api (
+  CardanoMode,
   ConsensusModeParams (CardanoModeParams),
   EpochSlots (EpochSlots),
   LocalChainSyncClient (..),
@@ -21,8 +22,8 @@ import Cardano.Api (
   NetworkMagic (NetworkMagic),
   connectToLocalNode,
  )
-import Cardano.Prelude (unlessM, void, whenM)
-import Control.Concurrent (ThreadId, threadDelay)
+import Cardano.Prelude (Word64, traceShow, unlessM, whenM)
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, async, cancel, race)
 import Control.Exception (finally)
 import Data.Text (Text)
@@ -33,29 +34,41 @@ import System.FilePath ((</>))
 import System.Process (CreateProcess (..), ProcessHandle, StdStream (..), proc, waitForProcess, withCreateProcess)
 import Prelude
 
+data NodeArguments = NodeArguments
+  { naNetworkId :: NetworkId
+  , naNodeSocket :: FilePath
+  , naStateDirectory :: FilePath
+  }
+  deriving (Eq, Show)
+
+defaultNodeArguments :: NodeArguments
+defaultNodeArguments =
+  NodeArguments
+    { naNetworkId = Testnet (NetworkMagic 2)
+    , naNodeSocket = "/tmp"
+    , naStateDirectory = "/tmp"
+    }
+
 data NodeHandle a = NodeHandle
   { startNode :: IO (Async a)
   , stopNode :: Async a -> IO ()
   }
 
 mkNodeHandle ::
-  NetworkId ->
-  FilePath ->
-  FilePath ->
-  IO a ->
-  IO (NodeHandle a)
-mkNodeHandle networkId stateDirectory nodeSocket action = do
-  let startNode = async $ withCardanoNode networkId stateDirectory nodeSocket action
-  let stopNode = cancel 
+  NodeArguments ->
+  IO (NodeHandle Int)
+mkNodeHandle na = do
+  let startNode = async $ withCardanoNode na
+  let stopNode = cancel
   pure $ NodeHandle startNode stopNode
 
+runCardanoNode :: NodeArguments -> IO Int
+runCardanoNode = withCardanoNode
+
 withCardanoNode ::
-  NetworkId ->
-  FilePath ->
-  FilePath ->
-  IO a ->
-  IO a
-withCardanoNode networkId stateDirectory nodeSocket action = do
+  NodeArguments ->
+  IO Int
+withCardanoNode NodeArguments{naNetworkId, naNodeSocket, naStateDirectory} = do
   p <- process
   withCreateProcess p{std_out = Inherit, std_err = Inherit} $
     \_stdin _stdout _stderr processHandle ->
@@ -72,27 +85,36 @@ withCardanoNode networkId stateDirectory nodeSocket action = do
     cwd <- getCurrentDirectory
     pure $
       cardanoNodeProcess
-        (Just stateDirectory)
-        (defaultCardanoNodeArgs $ networkIdToNodeConfigPath cwd networkId)
+        (Just naStateDirectory)
+        (defaultCardanoNodeArgs $ networkIdToNodeConfigPath cwd naNetworkId)
 
-  socketPath = stateDirectory </> nodeSocket
+  socketPath = naStateDirectory </> naNodeSocket
 
   waitForNode = do
-    waitForSocket nodeSocket
-    action
+    waitForSocket naNodeSocket
+    pure 1
 
   cleanupSocketFile =
     whenM (doesFileExist socketPath) $
       removeFile socketPath
 
-  networkIdToNodeConfigPath cwd network =
-    let basePath = cwd </> "cardano-lab" </> "config" </> "cardano-configurations" </> "network"
-     in case network of
-          Mainnet -> basePath </> "mainnet" </> "cardano-node"
-          Testnet (NetworkMagic 1) -> basePath </> "preprod" </> "cardano-node"
-          Testnet (NetworkMagic 2) -> basePath </> "preview" </> "cardano-node"
-          Testnet (NetworkMagic 1097911063) -> basePath </> "testnet" </> "cardano-node"
-          _ -> error "TODO: implement running on devnet"
+localNodeConnectInfo :: NetworkId -> FilePath -> LocalNodeConnectInfo CardanoMode
+localNodeConnectInfo = LocalNodeConnectInfo cardanoModeParams
+
+cardanoModeParams :: ConsensusModeParams CardanoMode
+cardanoModeParams = CardanoModeParams $ EpochSlots defaultByronEpochSlots
+ where
+  defaultByronEpochSlots = 21600 :: Word64
+
+networkIdToNodeConfigPath :: FilePath -> NetworkId -> FilePath
+networkIdToNodeConfigPath cwd network =
+  let basePath = cwd </> "cardano-lab" </> "config" </> "cardano-configurations" </> "network"
+   in case network of
+        Mainnet -> basePath </> "mainnet" </> "cardano-node"
+        Testnet (NetworkMagic 1) -> basePath </> "preprod" </> "cardano-node"
+        Testnet (NetworkMagic 2) -> basePath </> "preview" </> "cardano-node"
+        Testnet (NetworkMagic 1097911063) -> basePath </> "testnet" </> "cardano-node"
+        _ -> error "TODO: implement running on devnet"
 
 -- | Wait for the node socket file to become available.
 waitForSocket :: FilePath -> IO ()
