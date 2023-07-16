@@ -2,6 +2,7 @@
 , system ? builtins.currentSystem
 , pkgs
 , cardano-node
+, mithril 
 }:
 let
   nativePkgs = cardanoLabProject.hsPkgs;

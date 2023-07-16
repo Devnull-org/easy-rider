@@ -2,12 +2,14 @@
   withoutDevTools ? false
 , cardanoLabProject
 , cardano-node
+, mithril
 , system ? builtins.currentSystem
 }:
 let
   inherit (cardanoLabProject) compiler pkgs hsPkgs;
 
   cardano-node-pkgs = cardano-node.packages.${system};
+  mithril-pkgs = mithril.packages.${system};
 
   cabal = pkgs.haskell-nix.cabal-install.${compiler};
 
@@ -35,6 +37,7 @@ let
     pkgs.haskellPackages.cabal-plan
     pkgs.python3Packages.jsonschema
     cardano-node-pkgs.cardano-node
+    mithril-pkgs.mithril-client
   ];
 
   devInputs = if withoutDevTools then [ ] else [
@@ -46,6 +49,7 @@ let
     pkgs.websocat
     pkgs.yq
     cardano-node-pkgs.cardano-cli
+    mithril-pkgs.mithril-client
   ];
 
   haskellNixShell = hsPkgs.shellFor {
@@ -96,6 +100,7 @@ let
     buildInputs = [
       cardano-node-pkgs.cardano-node
       cardano-node-pkgs.cardano-cli
+      mithril-pkgs.mithril-client
       hsPkgs.cardano-lab.components.exes.cardano-lab
     ];
   };
