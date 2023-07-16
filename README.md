@@ -4,3 +4,4 @@
 
 - [ ] Run local cardano-node on specified network 
 - [ ] Provide commands to start, stop and get status of cardano-node
+- [ ] Use mithril to speed up the node sync time
