@@ -77,10 +77,15 @@ library
    , text
    , filepath
    , free
+   , io-classes
+   , transformers
+   , lens
+   , lens-aeson
 
   ghc-options:     -haddock
 
 executable cardano-lab-exe
+  import: project-config
   hs-source-dirs: exe
   main-is:        Main.hs
   other-modules:
@@ -88,8 +93,10 @@ executable cardano-lab-exe
   build-depends:
      base
    , cardano-api
+   , cardano-prelude
    , optparse-applicative 
    , cardano-lab
+   , io-classes
 
   ghc-options:    -threaded -rtsopts -with-rtsopts=-N4
 

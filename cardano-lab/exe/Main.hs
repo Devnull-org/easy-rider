@@ -1,10 +1,16 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Main where
 
+import Cardano.Prelude
+
 import Cardano.Api (NetworkId (Testnet), NetworkMagic (NetworkMagic))
+import Cardano.Mithril (mithril)
 import Cardano.Node (defaultNodeArguments)
 import Control.Concurrent (threadDelay)
+import Control.Concurrent.Class.MonadSTM (MonadSTM (newTQueue), atomically)
+import Control.Monad (forM_)
 import Lab (interpret, program)
-import Prelude
 
 main :: IO ()
 main = do
@@ -16,5 +22,7 @@ main = do
   -- nodeHandle <- startNode
   -- threadDelay 5000000
   -- stopNode nodeHandle
-  result <- interpret defaultNodeArguments program
-  print result
+  -- queue <- atomically newTQueue
+  -- result <- interpret defaultNodeArguments queue program
+  -- print result
+  mithril
