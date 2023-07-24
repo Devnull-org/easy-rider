@@ -2,6 +2,7 @@ module Cardano.Node where
 
 import Cardano.Api (
   CardanoMode,
+  ChainTip (ChainTip, ChainTipAtGenesis),
   ConsensusModeParams (CardanoModeParams),
   EpochSlots (EpochSlots),
   LocalChainSyncClient (..),
@@ -20,19 +21,21 @@ import Cardano.Api (
   ),
   NetworkId (Mainnet, Testnet),
   NetworkMagic (NetworkMagic),
-  connectToLocalNode, SlotNo, ChainTip (ChainTipAtGenesis, ChainTip), getLocalChainTip
+  SlotNo,
+  connectToLocalNode,
+  getLocalChainTip,
  )
 import Cardano.Prelude
-import Cardano.Util (checkProcessHasNotDied)
+import Cardano.Util (checkProcessHasFinished)
+import Control.Concurrent.Class.MonadSTM (TQueue)
 import System.Directory (doesFileExist, getCurrentDirectory, removeFile)
 import System.FilePath ((</>))
 import System.Process (CreateProcess (..), StdStream (..), proc, withCreateProcess)
 import Prelude (error)
-import Control.Concurrent.Class.MonadSTM (TQueue, MonadSTM (writeTQueue))
 
 data NodeArguments = NodeArguments
   { naNetworkId :: NetworkId
-  , naNodeSocket :: NodeSocket 
+  , naNodeSocket :: NodeSocket
   , naStateDirectory :: FilePath
   }
   deriving (Eq, Show)
@@ -47,7 +50,7 @@ type NodeSocket = FilePath
 
 -- | Arguments given to the 'cardano-node' command-line to run a node.
 data CardanoNodeArgs = CardanoNodeArgs
-  { nodeSocket :: NodeSocket 
+  { nodeSocket :: NodeSocket
   , nodeConfigFile :: FilePath
   , nodeByronGenesisFile :: FilePath
   , nodeShelleyGenesisFile :: FilePath
@@ -72,7 +75,7 @@ defaultNodeArguments =
 
 mkNodeHandle ::
   NodeArguments ->
-  TQueue IO Text -> 
+  TQueue IO Text ->
   IO (NodeHandle ())
 mkNodeHandle na queue = do
   let startNode = async $ withCardanoNode na queue
@@ -84,21 +87,25 @@ runCardanoNode = withCardanoNode
 
 withCardanoNode ::
   NodeArguments ->
-  TQueue IO Text -> 
-  IO () 
-withCardanoNode na@NodeArguments{naNetworkId, naNodeSocket, naStateDirectory} queue = do
-  p <- process
-  withCreateProcess p{std_out = NoStream, std_err = NoStream} $
-    \_stdin _stdout _stderr processHandle ->
-      ( race
-          (checkProcessHasNotDied "cardano-node" processHandle)
-          waitForNode
-          >>= \case
-            Left{} -> error "never should have been reached"
-            Right a -> pure a
-      )
-        `finally` cleanupSocketFile
+  TQueue IO Text ->
+  IO ()
+withCardanoNode NodeArguments{naNetworkId, naNodeSocket, naStateDirectory} _queue = do
+  putStrLn ("cardano-node start" :: Text)
+  threadDelay 2000000
+  putStrLn ("cardano-node end" :: Text)
  where
+  -- p <- process
+  -- withCreateProcess p{std_out = Inherit, std_err = Inherit} $
+  --   \_stdin _stdout _stderr processHandle ->
+  --     ( race
+  --         (checkProcessHasFinished "cardano-node" processHandle)
+  --         waitForNode
+  --         >>= \case
+  --           Left{} -> error "never should have been reached"
+  --           Right a -> pure a
+  --     )
+  --       `finally` cleanupSocketFile
+
   process = do
     cwd <- getCurrentDirectory
     pure $
@@ -110,10 +117,7 @@ withCardanoNode na@NodeArguments{naNetworkId, naNodeSocket, naStateDirectory} qu
 
   waitForNode = do
     waitForSocket naNodeSocket
-    slot <- queryTipSlotNo na
-    _ <- atomically $ writeTQueue queue ("Qurrent slot number" <> show slot) 
     pure ()
-   
 
   cleanupSocketFile =
     whenM (doesFileExist socketPath) $
@@ -121,7 +125,7 @@ withCardanoNode na@NodeArguments{naNetworkId, naNodeSocket, naStateDirectory} qu
 
 -- | Query the latest chain point just for the slot number.
 queryTipSlotNo :: NodeArguments -> IO SlotNo
-queryTipSlotNo NodeArguments{naNetworkId, naNodeSocket}  =
+queryTipSlotNo NodeArguments{naNetworkId, naNodeSocket} =
   getLocalChainTip (localNodeConnectInfo naNetworkId naNodeSocket) >>= \case
     ChainTipAtGenesis -> pure 0
     ChainTip slotNo _ _ -> pure slotNo

@@ -6,23 +6,8 @@ import Control.Lens ((^?))
 import Data.Aeson.Lens (key, nth, _String)
 import qualified Data.Text as T
 import GHC.Base (String, error)
-import GHC.IO.Handle (hGetLine, hIsEOF, hIsOpen)
-import System.Process (CreateProcess (std_err, std_out), StdStream (..), proc, readCreateProcess, terminateProcess, withCreateProcess)
-
-data MithrilArguments = MithrilArguments
-  { miNetworkId :: NetworkId
-  , miNodeSocket :: FilePath
-  , miStateDirectory :: FilePath
-  }
-  deriving (Eq, Show)
-
-defaultMithrilArguments :: MithrilArguments
-defaultMithrilArguments =
-  MithrilArguments
-    { miNetworkId = Testnet (NetworkMagic 2)
-    , miNodeSocket = "/tmp"
-    , miStateDirectory = "/tmp"
-    }
+import GHC.IO.Handle (hGetLine)
+import System.Process (CreateProcess (std_err, std_out), StdStream (..), proc, readCreateProcess, withCreateProcess)
 
 listAndDownloadLastSnapshot :: IO ()
 listAndDownloadLastSnapshot = do
@@ -47,33 +32,24 @@ downloadSnapshot :: String -> IO ()
 downloadSnapshot snapshot = do
   let mithrilProc = proc "mithril-client" (downloadSnapshotCmd snapshot)
   withCreateProcess mithrilProc{std_out = Inherit, std_err = Inherit} $
-    \_stdin mout _stderr processHandle -> do
-      let delaySeconds :: Int = 2
-      out <- waitForHandle delaySeconds mout
-      processLines out processHandle
+    \_stdin mout _stderr _processHandle -> outputLines mout
  where
+  outputLines mout = do
+    let delaySeconds :: Int = 2
+    out <- waitForHandle delaySeconds mout
+    processLines out
+
   waitForHandle n mhandle =
-    if isNothing mhandle
-      then do
+    case mhandle of
+      Nothing -> do
         threadDelay 1000000
         waitForHandle (n - 1) mhandle
-      else case mhandle of
-        -- TODO: throw concrete exception here
-        Nothing -> error "Handle not writeable"
-        Just out -> pure out
+      Just out ->
+        pure out
 
-  processLines out processHandle = do
-    isOpen <- hIsOpen out
-    if isOpen
-      then do
-        end <- hIsEOF out
-        if end
-          then terminateProcess processHandle
-          else do
-            line <- hGetLine out
-            putStrLn line
-      else -- TODO: throw concrete exception here
-        error "Handle not opened"
+  processLines out = do
+    line <- hGetLine out
+    putStrLn line
 
   downloadSnapshotCmd sn =
     [ "--run-mode"

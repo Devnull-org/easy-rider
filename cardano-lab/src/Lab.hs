@@ -4,8 +4,9 @@ import Cardano.Prelude
 
 import Cardano.Mithril (listAndDownloadLastSnapshot)
 import Cardano.Node (NodeArguments, runCardanoNode)
-import Control.Concurrent.Class.MonadSTM (MonadSTM (readTQueue), TQueue)
-import Control.Monad.Free (Free (..), foldFree)
+import Control.Concurrent.Class.MonadSTM (TQueue)
+import Control.Monad.Trans.Free (Free, FreeF (..), FreeT (..), liftF, runFree)
+import GHC.Base (id)
 
 -- * Mithil
 
@@ -16,21 +17,18 @@ newtype MithrilF next
 type Mithril = Free MithrilF
 
 downloadSnapshot' :: Mithril ()
-downloadSnapshot' = Free $ DownloadSnapshot (Pure ())
+downloadSnapshot' = liftF $ DownloadSnapshot ()
 
 mithrilProgram :: Mithril ()
 mithrilProgram = downloadSnapshot'
 
 interpretMithrilIO :: Mithril a -> IO a
-interpretMithrilIO = foldFree go
- where
-  go :: MithrilF a -> IO a
-  go (DownloadSnapshot next) = do
-    listAndDownloadLastSnapshot
-    pure next
-
-mithril :: IO ()
-mithril = interpretMithrilIO mithrilProgram
+interpretMithrilIO prog =
+  case runFree prog of
+    Pure a -> return a
+    Free (DownloadSnapshot next) -> do
+      listAndDownloadLastSnapshot
+      interpretMithrilIO next
 
 -- * Cardano Node
 
@@ -43,26 +41,38 @@ deriving instance Functor CardanoNodeF
 type CardanoNode = Free CardanoNodeF
 
 startTheNode :: CardanoNode (Async ())
-startTheNode = Free $ Start Pure
+startTheNode = liftF $ Start id
 
 stopTheNode :: Async () -> CardanoNode ()
-stopTheNode a = Free $ Stop a (Pure ())
+stopTheNode a = liftF $ Stop a ()
 
-program :: CardanoNode ()
-program = do
+cardanoNodeProgram :: CardanoNode ()
+cardanoNodeProgram = do
   res <- startTheNode
   stopTheNode res
 
-interpret :: NodeArguments -> TQueue IO Text -> CardanoNode () -> IO ()
-interpret na queue = foldFree go
- where
-  go :: CardanoNodeF a -> IO a
-  go (Start next) = do
-    r <- async $ runCardanoNode na queue
-    _ <- forever $ do
-      msg <- atomically $ readTQueue queue
-      print msg
-    pure $ next r
-  go (Stop asyncHandle next) = do
-    cancel asyncHandle
-    pure next
+interpretCardanoNodeIO :: NodeArguments -> TQueue IO Text -> CardanoNode a -> IO a
+interpretCardanoNodeIO na queue prog =
+  case runFree prog of
+    Pure a -> return a
+    Free (Start next) -> do
+      r <- async $ runCardanoNode na queue
+      interpretCardanoNodeIO na queue $ next r
+    Free (Stop asyncHandle next) -> do
+      cancel asyncHandle
+      interpretCardanoNodeIO na queue next
+
+program :: FreeT CardanoNode Mithril ()
+program = do
+  _ <- lift mithrilProgram
+  asyncHandle <- liftF startTheNode
+  liftF $ stopTheNode asyncHandle
+
+interpretIO :: NodeArguments -> TQueue IO Text -> FreeT CardanoNode Mithril a -> IO a
+interpretIO na queue prog = do
+  r <- interpretMithrilIO $ runFreeT prog
+  case r of
+    Pure x -> return x
+    Free a -> do
+      next <- interpretCardanoNodeIO na queue a
+      interpretIO na queue next
