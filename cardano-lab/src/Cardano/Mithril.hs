@@ -3,35 +3,11 @@ module Cardano.Mithril where
 import Cardano.Api (NetworkId (Testnet), NetworkMagic (NetworkMagic))
 import Cardano.Prelude hiding (getContents)
 import Control.Lens ((^?))
-import Control.Monad.Free (Free (..), foldFree)
 import Data.Aeson.Lens (key, nth, _String)
 import qualified Data.Text as T
 import GHC.Base (String, error)
 import GHC.IO.Handle (hGetLine, hIsEOF, hIsOpen)
 import System.Process (CreateProcess (std_err, std_out), StdStream (..), proc, readCreateProcess, terminateProcess, withCreateProcess)
-
-newtype MithrilF next
-  = DownloadSnapshot next
-  deriving (Functor)
-
-type Mithril = Free MithrilF
-
-downloadSnapshot' :: Mithril ()
-downloadSnapshot' = Free $ DownloadSnapshot (Pure ())
-
-mithrilProgram :: Mithril ()
-mithrilProgram = downloadSnapshot'
-
-interpretMithrilIO :: Mithril a -> IO a
-interpretMithrilIO = foldFree go
- where
-  go :: MithrilF a -> IO a
-  go (DownloadSnapshot next) = do
-    listAndDownloadLastSnapshot
-    pure next
-
-mithril :: IO ()
-mithril = interpretMithrilIO mithrilProgram
 
 data MithrilArguments = MithrilArguments
   { miNetworkId :: NetworkId
@@ -96,8 +72,8 @@ downloadSnapshot snapshot = do
           else do
             line <- hGetLine out
             putStrLn line
-      -- TODO: throw concrete exception here
-      else error "Handle not opened"
+      else -- TODO: throw concrete exception here
+        error "Handle not opened"
 
   downloadSnapshotCmd sn =
     [ "--run-mode"

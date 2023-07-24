@@ -28,7 +28,7 @@ import System.Directory (doesFileExist, getCurrentDirectory, removeFile)
 import System.FilePath ((</>))
 import System.Process (CreateProcess (..), StdStream (..), proc, withCreateProcess)
 import Prelude (error)
-import Control.Concurrent.Class.MonadSTM (TQueue, MonadSTM (readTQueue, writeTQueue))
+import Control.Concurrent.Class.MonadSTM (TQueue, MonadSTM (writeTQueue))
 
 data NodeArguments = NodeArguments
   { naNetworkId :: NetworkId
