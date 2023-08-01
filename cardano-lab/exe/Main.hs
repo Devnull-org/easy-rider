@@ -15,7 +15,8 @@ main = do
         NodeArguments
           { naNetworkId = Testnet (NetworkMagic 2)
           , naNodeSocket = "/tmp"
-          , naStateDirectory = "/db"
+          , naStateDirectory = "db"
           }
   queue <- atomically newTQueue
-  interpretIO nodeArguments queue program
+  _asyncHandle <- interpretIO nodeArguments queue program
+  putStrLn ("cardano-node running..." :: Text)

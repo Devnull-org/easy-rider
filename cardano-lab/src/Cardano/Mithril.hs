@@ -1,7 +1,7 @@
 module Cardano.Mithril where
 
-import Cardano.Api (NetworkId (Testnet), NetworkMagic (NetworkMagic))
 import Cardano.Prelude hiding (getContents)
+import Cardano.Util (checkProcessHasFinished)
 import Control.Lens ((^?))
 import Data.Aeson.Lens (key, nth, _String)
 import qualified Data.Text as T
@@ -32,7 +32,10 @@ downloadSnapshot :: String -> IO ()
 downloadSnapshot snapshot = do
   let mithrilProc = proc "mithril-client" (downloadSnapshotCmd snapshot)
   withCreateProcess mithrilProc{std_out = Inherit, std_err = Inherit} $
-    \_stdin mout _stderr _processHandle -> outputLines mout
+    \_stdin mout _stderr processHandle ->
+      race_
+        (checkProcessHasFinished "mithril-client" processHandle)
+        (outputLines mout)
  where
   outputLines mout = do
     let delaySeconds :: Int = 2

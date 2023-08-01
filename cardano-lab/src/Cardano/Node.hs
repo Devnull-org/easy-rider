@@ -90,21 +90,18 @@ withCardanoNode ::
   TQueue IO Text ->
   IO ()
 withCardanoNode NodeArguments{naNetworkId, naNodeSocket, naStateDirectory} _queue = do
-  putStrLn ("cardano-node start" :: Text)
-  threadDelay 2000000
-  putStrLn ("cardano-node end" :: Text)
+  p <- process
+  withCreateProcess p{std_out = Inherit, std_err = Inherit} $
+    \_stdin _stdout _stderr processHandle ->
+      ( race
+          (checkProcessHasFinished "cardano-node" processHandle)
+          waitForNode
+          >>= \case
+            Left{} -> error "never should have been reached"
+            Right a -> pure a
+      )
+        `finally` cleanupSocketFile
  where
-  -- p <- process
-  -- withCreateProcess p{std_out = Inherit, std_err = Inherit} $
-  --   \_stdin _stdout _stderr processHandle ->
-  --     ( race
-  --         (checkProcessHasFinished "cardano-node" processHandle)
-  --         waitForNode
-  --         >>= \case
-  --           Left{} -> error "never should have been reached"
-  --           Right a -> pure a
-  --     )
-  --       `finally` cleanupSocketFile
 
   process = do
     cwd <- getCurrentDirectory
