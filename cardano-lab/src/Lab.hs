@@ -7,6 +7,7 @@ import Cardano.Node (NodeArguments, runCardanoNode)
 import Control.Concurrent.Class.MonadSTM (TQueue)
 import Control.Monad.Trans.Free (Free, FreeF (..), FreeT (..), liftF, runFree)
 import GHC.Base (id)
+import System.Directory (doesDirectoryExist)
 
 -- * Mithil
 
@@ -27,8 +28,14 @@ interpretMithrilIO prog =
   case runFree prog of
     Pure a -> return a
     Free (DownloadSnapshot next) -> do
-      listAndDownloadLastSnapshot
-      interpretMithrilIO next 
+      -- NOTE: it can happen that db directory exists but the network on
+      -- subsequent runs are different which will cause problems.
+      dbExists <- doesDirectoryExist "db"
+      if dbExists
+        then interpretMithrilIO next
+        else do
+          listAndDownloadLastSnapshot
+          interpretMithrilIO next
 
 -- * Cardano Node
 

@@ -36,7 +36,6 @@ import Prelude (error)
 data NodeArguments = NodeArguments
   { naNetworkId :: NetworkId
   , naNodeSocket :: NodeSocket
-  , naStateDirectory :: FilePath
   }
   deriving (Eq, Show)
 
@@ -65,14 +64,6 @@ data CardanoNodeArgs = CardanoNodeArgs
   , nodePort :: Maybe Port
   }
 
-defaultNodeArguments :: NodeArguments
-defaultNodeArguments =
-  NodeArguments
-    { naNetworkId = Testnet (NetworkMagic 2)
-    , naNodeSocket = "/tmp"
-    , naStateDirectory = "/tmp"
-    }
-
 mkNodeHandle ::
   NodeArguments ->
   TQueue IO Text ->
@@ -89,7 +80,7 @@ withCardanoNode ::
   NodeArguments ->
   TQueue IO Text ->
   IO ()
-withCardanoNode NodeArguments{naNetworkId, naNodeSocket, naStateDirectory} _queue = do
+withCardanoNode NodeArguments{naNetworkId, naNodeSocket} _queue = do
   p <- process
   withCreateProcess p{std_out = Inherit, std_err = Inherit} $
     \_stdin _stdout _stderr processHandle ->
@@ -102,23 +93,20 @@ withCardanoNode NodeArguments{naNetworkId, naNodeSocket, naStateDirectory} _queu
       )
         `finally` cleanupSocketFile
  where
-
   process = do
     cwd <- getCurrentDirectory
     pure $
       cardanoNodeProcess
-        (Just naStateDirectory)
+        (Just "db")
         (defaultCardanoNodeArgs $ networkIdToNodeConfigPath cwd naNetworkId)
-
-  socketPath = naStateDirectory </> naNodeSocket
 
   waitForNode = do
     waitForSocket naNodeSocket
     pure ()
 
   cleanupSocketFile =
-    whenM (doesFileExist socketPath) $
-      removeFile socketPath
+    whenM (doesFileExist naNodeSocket) $
+      removeFile naNodeSocket
 
 -- | Query the latest chain point just for the slot number.
 queryTipSlotNo :: NodeArguments -> IO SlotNo

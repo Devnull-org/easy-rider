@@ -15,7 +15,6 @@ main = do
         NodeArguments
           { naNetworkId = Testnet (NetworkMagic 2)
           , naNodeSocket = "/tmp"
-          , naStateDirectory = "db"
           }
   queue <- atomically newTQueue
   _asyncHandle <- interpretIO nodeArguments queue program

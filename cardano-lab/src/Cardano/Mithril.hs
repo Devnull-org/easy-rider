@@ -9,7 +9,7 @@ import GHC.Base (String, error)
 import GHC.IO.Handle (hGetLine)
 import System.Process (CreateProcess (std_err, std_out), StdStream (..), proc, readCreateProcess, withCreateProcess)
 
-listAndDownloadLastSnapshot :: IO ()
+listAndDownloadLastSnapshot :: IO () 
 listAndDownloadLastSnapshot = do
   let mithrilProc = proc "mithril-client" listSnapshotsArgs
   snapshotsJson <- readCreateProcess mithrilProc ""
@@ -28,7 +28,7 @@ listAndDownloadLastSnapshot = do
     , "--json"
     ]
 
-downloadSnapshot :: String -> IO ()
+downloadSnapshot :: String -> IO () 
 downloadSnapshot snapshot = do
   let mithrilProc = proc "mithril-client" (downloadSnapshotCmd snapshot)
   withCreateProcess mithrilProc{std_out = Inherit, std_err = Inherit} $
