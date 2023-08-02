@@ -71,6 +71,7 @@ library
    , cardano-binary                  >=1.5.0
    , cardano-crypto-class            >=2.0.0
    , cardano-prelude
+   , raw-strings-qq
    , directory
    , plutus-ledger-api               >=1.1.0.0
    , process

@@ -7,7 +7,7 @@ import Cardano.Prelude
 import Cardano.Api (NetworkId (..), NetworkMagic (..))
 import Cardano.Node (NodeArguments (..))
 import Control.Concurrent.Class.MonadSTM (newTQueue)
-import Lab (interpretIO, program)
+import Lab (interpretIO, program, program', programIO')
 
 main :: IO ()
 main = do
@@ -17,5 +17,7 @@ main = do
           , naNodeSocket = "/tmp"
           }
   queue <- atomically newTQueue
-  _asyncHandle <- interpretIO nodeArguments queue program
-  putStrLn ("cardano-node running..." :: Text)
+  -- _asyncHandle <- interpretIO nodeArguments queue program
+  command <- programIO' program' 
+  pure ()
+  -- putStrLn ("cardano-node running..." :: Text)

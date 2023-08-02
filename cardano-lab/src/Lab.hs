@@ -1,3 +1,4 @@
+{-# language QuasiQuotes #-}
 module Lab where
 
 import Cardano.Prelude
@@ -6,8 +7,9 @@ import Cardano.Mithril (listAndDownloadLastSnapshot)
 import Cardano.Node (NodeArguments, runCardanoNode)
 import Control.Concurrent.Class.MonadSTM (TQueue)
 import Control.Monad.Trans.Free (Free, FreeF (..), FreeT (..), liftF, runFree)
-import GHC.Base (id)
+import GHC.Base (id, error)
 import System.Directory (doesDirectoryExist)
+import Text.RawString.QQ 
 
 -- * Mithil
 
@@ -62,18 +64,63 @@ interpretCardanoNodeIO na queue prog =
 
 -- * Program
 
+data Command
+        = StartTheNode 
+        | UnknownCommand
+        deriving (Eq, Show)
+
 data ProgramF next
-  = GetInput (Text -> next)
-  | StopProgram
+  = DisplayPrompt (Text -> next) 
+  | GetInput (Text -> next)
+  | ParseInput Text (Command -> next) 
+  | DisplayCommand Command (Command -> next)
   deriving (Functor)
 
+
 type Program = Free ProgramF
+
+displayPrompt :: Program Text
+displayPrompt = liftF $ DisplayPrompt id
 
 getInput :: Program Text
 getInput = liftF $ GetInput id
 
-stopProgram :: Program a
-stopProgram = liftF StopProgram
+parseInput :: Text -> Program Command 
+parseInput t = liftF $ ParseInput t id 
+
+displayCommand :: Command -> Program Command 
+displayCommand c = liftF $ DisplayCommand c id 
+
+program' :: Program Command
+program' = do
+ void displayPrompt 
+ input <- getInput
+ command <- parseInput input
+ displayCommand command 
+
+programIO' :: Program a -> IO a 
+programIO' prog =
+  case runFree prog of
+    Pure x -> return x 
+    Free (DisplayPrompt next) -> do
+        putText prompt
+        programIO' $ next prompt
+    Free (GetInput next) -> do
+      x <- getLine
+      programIO' $ next x 
+    Free (ParseInput t next) -> 
+      case t of
+        "1" -> programIO' $ next StartTheNode 
+        _ -> programIO' $ next UnknownCommand 
+    Free (DisplayCommand c next) -> 
+        case c of
+         StartTheNode -> do 
+             putStrLn ("start cardano-node here ..." :: Text)
+             programIO' $ next c
+         UnknownCommand -> do 
+             putStrLn ("Unknown command. Please try again." :: Text)
+             programIO' $ next c
+
 
 program :: FreeT CardanoNode Mithril ()
 program = do
@@ -82,9 +129,28 @@ program = do
 
 interpretIO :: NodeArguments -> TQueue IO Text -> FreeT CardanoNode Mithril a -> IO a
 interpretIO na queue prog = do
-  r <- interpretMithrilIO $ runFreeT prog
-  case r of
-    Pure x -> return x
+  x <- interpretMithrilIO $ runFreeT prog
+  case x of
+    Pure a -> return a
     Free a -> do
       next <- interpretCardanoNodeIO na queue a
       interpretIO na queue next
+
+
+prompt :: Text
+prompt = 
+  [r|
+   ______               __                     __          __  
+  / ____/___ __________/ /___ _____  ____     / /   ____ _/ /_ 
+ / /   / __ `/ ___/ __  / __ `/ __ \/ __ \   / /   / __ `/ __ \
+/ /___/ /_/ / /  / /_/ / /_/ / / / / /_/ /  / /___/ /_/ / /_/ /
+\____/\__,_/_/   \__,_/\__,_/_/ /_/\____/  /_____/\__,_/_.___/ 
+                                       
+> 
+> Commands: 
+> 1. Start cardano-node
+> Waiting for command...
+>>
+  |]
+                                                              
+                                                              
