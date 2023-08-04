@@ -7,7 +7,7 @@ import Cardano.Mithril (listAndDownloadLastSnapshot)
 import Cardano.Node (NodeArguments, runCardanoNode)
 import Control.Concurrent.Class.MonadSTM (TQueue)
 import Control.Monad.Trans.Free (Free, FreeF (..), FreeT (..), liftF, runFree)
-import GHC.Base (id, error)
+import GHC.Base (id)
 import System.Directory (doesDirectoryExist)
 import Text.RawString.QQ 
 

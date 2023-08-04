@@ -5,6 +5,7 @@ import Cardano.Api (
   ChainTip (ChainTip, ChainTipAtGenesis),
   ConsensusModeParams (CardanoModeParams),
   EpochSlots (EpochSlots),
+  File (File),
   LocalChainSyncClient (..),
   LocalNodeClientProtocols (
     LocalNodeClientProtocols,
@@ -22,6 +23,7 @@ import Cardano.Api (
   NetworkId (Mainnet, Testnet),
   NetworkMagic (NetworkMagic),
   SlotNo,
+  SocketPath,
   connectToLocalNode,
   getLocalChainTip,
  )
@@ -35,7 +37,7 @@ import Prelude (error)
 
 data NodeArguments = NodeArguments
   { naNetworkId :: NetworkId
-  , naNodeSocket :: NodeSocket
+  , naNodeSocket :: FilePath
   }
   deriving (Eq, Show)
 
@@ -99,7 +101,6 @@ withCardanoNode NodeArguments{naNetworkId, naNodeSocket} _queue = do
       cardanoNodeProcess
         (Just "db")
         (defaultCardanoNodeArgs $ networkIdToNodeConfigPath cwd naNetworkId)
-
   waitForNode = do
     waitForSocket naNodeSocket
     pure ()
@@ -111,11 +112,11 @@ withCardanoNode NodeArguments{naNetworkId, naNodeSocket} _queue = do
 -- | Query the latest chain point just for the slot number.
 queryTipSlotNo :: NodeArguments -> IO SlotNo
 queryTipSlotNo NodeArguments{naNetworkId, naNodeSocket} =
-  getLocalChainTip (localNodeConnectInfo naNetworkId naNodeSocket) >>= \case
+  getLocalChainTip (localNodeConnectInfo naNetworkId (File naNodeSocket)) >>= \case
     ChainTipAtGenesis -> pure 0
     ChainTip slotNo _ _ -> pure slotNo
 
-localNodeConnectInfo :: NetworkId -> NodeSocket -> LocalNodeConnectInfo CardanoMode
+localNodeConnectInfo :: NetworkId -> SocketPath -> LocalNodeConnectInfo CardanoMode
 localNodeConnectInfo = LocalNodeConnectInfo cardanoModeParams
 
 cardanoModeParams :: ConsensusModeParams CardanoMode
@@ -204,7 +205,7 @@ connectCardanoNode networkId nodeSocket =
     LocalNodeConnectInfo
       { localConsensusModeParams = CardanoModeParams (EpochSlots 21600)
       , localNodeNetworkId = networkId
-      , localNodeSocketPath = nodeSocket
+      , localNodeSocketPath = File nodeSocket
       }
 
   clientProtocols =

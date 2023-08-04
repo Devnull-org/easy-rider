@@ -1,4 +1,4 @@
-{ compiler ? "ghc8107"
+{ compiler ? "ghc928"
 , system ? builtins.currentSystem
 , haskellNix
 , iohk-nix

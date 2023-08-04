@@ -76,7 +76,7 @@ let
     name = "cabal-shell";
 
     buildInputs = libs ++ [
-      pkgs.haskell.compiler.${compiler}
+      pkgs.haskell-nix.compiler.${compiler}
       pkgs.cabal-install
       pkgs.pkgconfig
     ] ++ buildInputs ++ devInputs;
@@ -99,7 +99,6 @@ let
 
     buildInputs = [
       cardano-node-pkgs.cardano-node
-      cardano-node-pkgs.cardano-cli
       mithril-pkgs.mithril-client
       hsPkgs.cardano-lab.components.exes.cardano-lab
     ];

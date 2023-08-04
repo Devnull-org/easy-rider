@@ -9,8 +9,8 @@
       url = "github:input-output-hk/cardano-haskell-packages?ref=repo";
       flake = false;
     };
-    cardano-node.url = "github:input-output-hk/cardano-node/1.35.7";
-    mithril.url = "github:input-output-hk/mithril/2327.0";
+    cardano-node.url = "github:input-output-hk/cardano-node/8.1.2";
+    mithril.url = "github:input-output-hk/mithril/2329.0";
   };
 
   outputs =
