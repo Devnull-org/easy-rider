@@ -4,20 +4,9 @@ module Main where
 
 import Cardano.Prelude
 
-import Cardano.Api (NetworkId (..), NetworkMagic (..))
-import Cardano.Node (NodeArguments (..))
-import Control.Concurrent.Class.MonadSTM (newTQueue)
-import Lab (interpretIO, program, program', programIO')
+import Lab (program, programIO)
 
 main :: IO ()
 main = do
-  let nodeArguments =
-        NodeArguments
-          { naNetworkId = Testnet (NetworkMagic 2)
-          , naNodeSocket = "/tmp"
-          }
-  queue <- atomically newTQueue
-  -- _asyncHandle <- interpretIO nodeArguments queue program
-  command <- programIO' program' 
+  _ <- programIO program
   pure ()
-  -- putStrLn ("cardano-node running..." :: Text)

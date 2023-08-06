@@ -29,7 +29,6 @@ import Cardano.Api (
  )
 import Cardano.Prelude
 import Cardano.Util (checkProcessHasFinished)
-import Control.Concurrent.Class.MonadSTM (TQueue)
 import System.Directory (doesFileExist, getCurrentDirectory, removeFile)
 import System.FilePath ((</>))
 import System.Process (CreateProcess (..), StdStream (..), proc, withCreateProcess)
@@ -45,6 +44,12 @@ data NodeHandle a = NodeHandle
   { startNode :: IO (Async a)
   , stopNode :: Async a -> IO ()
   }
+
+data AvailableNetworks
+  = Preview
+  | Preprod
+  | Mainnet
+  deriving (Eq, Show, Read)
 
 type Port = Int
 type NodeSocket = FilePath
@@ -68,21 +73,19 @@ data CardanoNodeArgs = CardanoNodeArgs
 
 mkNodeHandle ::
   NodeArguments ->
-  TQueue IO Text ->
   IO (NodeHandle ())
-mkNodeHandle na queue = do
-  let startNode = async $ withCardanoNode na queue
+mkNodeHandle na = do
+  let startNode = async $ withCardanoNode na
   let stopNode = cancel
   pure $ NodeHandle startNode stopNode
 
-runCardanoNode :: NodeArguments -> TQueue IO Text -> IO ()
+runCardanoNode :: NodeArguments -> IO ()
 runCardanoNode = withCardanoNode
 
 withCardanoNode ::
   NodeArguments ->
-  TQueue IO Text ->
   IO ()
-withCardanoNode NodeArguments{naNetworkId, naNodeSocket} _queue = do
+withCardanoNode NodeArguments{naNetworkId, naNodeSocket} = do
   p <- process
   withCreateProcess p{std_out = Inherit, std_err = Inherit} $
     \_stdin _stdout _stderr processHandle ->
@@ -128,11 +131,18 @@ networkIdToNodeConfigPath :: FilePath -> NetworkId -> FilePath
 networkIdToNodeConfigPath cwd network =
   let basePath = cwd </> "cardano-lab" </> "config" </> "cardano-configurations" </> "network"
    in case network of
-        Mainnet -> basePath </> "mainnet" </> "cardano-node"
+        Cardano.Api.Mainnet -> basePath </> "mainnet" </> "cardano-node"
         Testnet (NetworkMagic 1) -> basePath </> "preprod" </> "cardano-node"
         Testnet (NetworkMagic 2) -> basePath </> "preview" </> "cardano-node"
         Testnet (NetworkMagic 1097911063) -> basePath </> "testnet" </> "cardano-node"
         _ -> error "TODO: implement running on devnet"
+
+toNetworkId :: AvailableNetworks -> NetworkId
+toNetworkId =
+  \case
+    Cardano.Node.Mainnet -> Cardano.Api.Mainnet
+    Cardano.Node.Preview -> Testnet (NetworkMagic 1)
+    Cardano.Node.Preprod -> Testnet (NetworkMagic 2)
 
 -- | Wait for the node socket file to become available.
 waitForSocket :: NodeSocket -> IO ()

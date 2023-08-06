@@ -2,7 +2,6 @@ module Cardano.Util where
 
 import Cardano.Prelude
 import System.Process (ProcessHandle, waitForProcess)
-import Prelude (error)
 
 newtype ProcessDied = ProcessDied Text deriving (Eq, Show)
 

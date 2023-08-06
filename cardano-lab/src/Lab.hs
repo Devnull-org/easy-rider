@@ -1,15 +1,15 @@
-{-# language QuasiQuotes #-}
+{-# LANGUAGE QuasiQuotes #-}
+
 module Lab where
 
 import Cardano.Prelude
 
 import Cardano.Mithril (listAndDownloadLastSnapshot)
-import Cardano.Node (NodeArguments, runCardanoNode)
-import Control.Concurrent.Class.MonadSTM (TQueue)
+import Cardano.Node (AvailableNetworks, NodeArguments (..), runCardanoNode, toNetworkId)
 import Control.Monad.Trans.Free (Free, FreeF (..), FreeT (..), liftF, runFree)
 import GHC.Base (id)
 import System.Directory (doesDirectoryExist)
-import Text.RawString.QQ 
+import Text.RawString.QQ
 
 -- * Mithil
 
@@ -54,30 +54,33 @@ startTheNode = liftF $ Start ()
 cardanoNodeProgram :: CardanoNode ()
 cardanoNodeProgram = startTheNode
 
-interpretCardanoNodeIO :: NodeArguments -> TQueue IO Text -> CardanoNode a -> IO a
-interpretCardanoNodeIO na queue prog =
+interpretCardanoNodeIO :: NodeArguments -> CardanoNode a -> IO a
+interpretCardanoNodeIO na prog =
   case runFree prog of
     Pure a -> return a
     Free (Start next) -> do
-      runCardanoNode na queue
-      interpretCardanoNodeIO na queue next
+      runCardanoNode na
+      interpretCardanoNodeIO na next
 
 -- * Program
 
 data Command
-        = StartTheNode 
-        | UnknownCommand
-        deriving (Eq, Show)
+  = StartTheNode AvailableNetworks
+  | UnknownCommand
+  deriving (Eq, Show)
 
 data ProgramF next
-  = DisplayPrompt (Text -> next) 
+  = DisplaySplash (Text -> next)
+  | DisplayPrompt (Text -> next)
   | GetInput (Text -> next)
-  | ParseInput Text (Command -> next) 
-  | DisplayCommand Command (Command -> next)
+  | ParseInput Text (Command -> next)
+  | HandleCommand Command (Command -> next)
   deriving (Functor)
 
-
 type Program = Free ProgramF
+
+displaySplash :: Program Text
+displaySplash = liftF $ DisplaySplash id
 
 displayPrompt :: Program Text
 displayPrompt = liftF $ DisplayPrompt id
@@ -85,60 +88,77 @@ displayPrompt = liftF $ DisplayPrompt id
 getInput :: Program Text
 getInput = liftF $ GetInput id
 
-parseInput :: Text -> Program Command 
-parseInput t = liftF $ ParseInput t id 
+parseInput :: Text -> Program Command
+parseInput t = liftF $ ParseInput t id
 
-displayCommand :: Command -> Program Command 
-displayCommand c = liftF $ DisplayCommand c id 
+handleCommand :: Command -> Program Command
+handleCommand c = liftF $ HandleCommand c id
 
-program' :: Program Command
-program' = do
- void displayPrompt 
- input <- getInput
- command <- parseInput input
- displayCommand command 
+program :: Program Command
+program = do
+  void displaySplash
+  go
+ where
+  go = do
+    void displayPrompt
+    input <- getInput
+    command <- parseInput input
+    _ <- handleCommand command
+    go
 
-programIO' :: Program a -> IO a 
-programIO' prog =
+programIO :: Program a -> IO a
+programIO prog =
   case runFree prog of
-    Pure x -> return x 
+    Pure x -> return x
+    Free (DisplaySplash next) -> do
+      putText splash
+      programIO $ next splash
     Free (DisplayPrompt next) -> do
-        putText prompt
-        programIO' $ next prompt
+      putText prompt
+      programIO $ next prompt
     Free (GetInput next) -> do
       x <- getLine
-      programIO' $ next x 
-    Free (ParseInput t next) -> 
-      case t of
-        "1" -> programIO' $ next StartTheNode 
-        _ -> programIO' $ next UnknownCommand 
-    Free (DisplayCommand c next) -> 
-        case c of
-         StartTheNode -> do 
-             putStrLn ("start cardano-node here ..." :: Text)
-             programIO' $ next c
-         UnknownCommand -> do 
-             putStrLn ("Unknown command. Please try again." :: Text)
-             programIO' $ next c
+      programIO $ next x
+    Free (ParseInput t next) ->
+      case readMaybe t :: Maybe AvailableNetworks of
+        Just network -> programIO $ next (StartTheNode network)
+        Nothing -> programIO $ next UnknownCommand
+    Free (HandleCommand c next) ->
+      case c of
+        StartTheNode network -> do
+          let na =
+                NodeArguments
+                  { naNetworkId = toNetworkId network
+                  , naNodeSocket = "./."
+                  }
+          listAndDownloadLastSnapshot
+          _ <- runCardanoNode na
+          programIO $ next c
+        UnknownCommand -> do
+          putStrLn ("Unknown command. Please try again." :: Text)
+          programIO $ next c
 
-
-program :: FreeT CardanoNode Mithril ()
-program = do
+-- | Simpler version of the program
+program' :: FreeT CardanoNode Mithril ()
+program' = do
   _ <- lift mithrilProgram
   liftF startTheNode
 
-interpretIO :: NodeArguments -> TQueue IO Text -> FreeT CardanoNode Mithril a -> IO a
-interpretIO na queue prog = do
+interpretIO' :: NodeArguments -> FreeT CardanoNode Mithril a -> IO a
+interpretIO' na prog = do
   x <- interpretMithrilIO $ runFreeT prog
   case x of
     Pure a -> return a
     Free a -> do
-      next <- interpretCardanoNodeIO na queue a
-      interpretIO na queue next
+      next <- interpretCardanoNodeIO na a
+      interpretIO' na next
 
-
+-- | TODO: Display nice prompt and use a lib to output to stdout in general.
 prompt :: Text
-prompt = 
+prompt = " "
+
+splash :: Text
+splash =
   [r|
    ______               __                     __          __  
   / ____/___ __________/ /___ _____  ____     / /   ____ _/ /_ 
@@ -146,11 +166,15 @@ prompt =
 / /___/ /_/ / /  / /_/ / /_/ / / / / /_/ /  / /___/ /_/ / /_/ /
 \____/\__,_/_/   \__,_/\__,_/_/ /_/\____/  /_____/\__,_/_.___/ 
                                        
-> 
-> Commands: 
-> 1. Start cardano-node
-> Waiting for command...
->>
+> Description: Start cardano-node on the specified network using mithril-client
+> to download the latest snapshot. 
+> mithril-client will download the latest snapshot for specified network into the "db"
+> directory in the root of the project.
+> If this directory is not empty it is the user responsibility to make sure 
+> each subsequent run of this app is using the same network identifier or delete
+> the folder before running the cardano-lab app.
+>
+>  
+> Please choose the cardano-node network: 
+> Preview / Preprod / Mainnet ?
   |]
-                                                              
-                                                              
