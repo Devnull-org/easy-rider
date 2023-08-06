@@ -65,21 +65,15 @@ library
     Cardano.Node
     Cardano.Mithril
   build-depends:
-     async
    , base
    , cardano-api                     >=1.36.0
-   , cardano-binary                  >=1.5.0
-   , cardano-crypto-class            >=2.0.0
    , cardano-prelude
    , raw-strings-qq
    , directory
-   , plutus-ledger-api               >=1.1.0.0
    , process
    , text
    , filepath
    , free
-   , io-classes
-   , transformers
    , lens
    , lens-aeson
 
@@ -90,14 +84,9 @@ executable cardano-lab-exe
   hs-source-dirs: exe
   main-is:        Main.hs
   other-modules:
-    Options
   build-depends:
-     base
-   , cardano-api
    , cardano-prelude
-   , optparse-applicative 
    , cardano-lab
-   , io-classes
 
   ghc-options:    -threaded -rtsopts -with-rtsopts=-N4
 
