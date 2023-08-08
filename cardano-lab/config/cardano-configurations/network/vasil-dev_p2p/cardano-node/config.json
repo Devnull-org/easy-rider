@@ -20,7 +20,7 @@
   "TargetNumberOfRootPeers": 100,
   "TestAllegraHardForkAtEpoch": 0,
   "TestAlonzoHardForkAtEpoch": 0,
-  "TestEnableDevelopmentHardForkEras": true,
+  "ExperimentalHardForksEnabled": true,
   "TestEnableDevelopmentNetworkProtocols": true,
   "TestMaryHardForkAtEpoch": 0,
   "TestShelleyHardForkAtEpoch": 0,

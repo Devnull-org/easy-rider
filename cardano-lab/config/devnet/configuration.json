@@ -74,6 +74,6 @@
     }
   },
 
-  "TestEnableDevelopmentHardForkEras": true,
+  "ExperimentalHardForksEnabled": true,
   "TestEnableDevelopmentNetworkProtocols": true
 }
