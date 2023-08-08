@@ -30,14 +30,8 @@ interpretMithrilIO prog =
   case runFree prog of
     Pure a -> return a
     Free (DownloadSnapshot next) -> do
-      -- NOTE: it can happen that db directory exists but the network on
-      -- subsequent runs are different which will cause problems.
-      dbExists <- doesDirectoryExist "db"
-      if dbExists
-        then interpretMithrilIO next
-        else do
-          listAndDownloadLastSnapshot
-          interpretMithrilIO next
+      listAndDownloadLastSnapshot
+      interpretMithrilIO next
 
 -- * Cardano Node
 
@@ -131,9 +125,15 @@ programIO prog =
                   { naNetworkId = toNetworkId network
                   , naNodeSocket = "./."
                   }
-          listAndDownloadLastSnapshot
-          _ <- runCardanoNode na
-          programIO $ next c
+          dbExists <- doesDirectoryExist "db"
+          if dbExists
+            then do
+              _ <- runCardanoNode na
+              programIO $ next c
+            else do
+              listAndDownloadLastSnapshot
+              _ <- runCardanoNode na
+              programIO $ next c
         UnknownCommand -> do
           putStrLn ("Unknown command. Please try again." :: Text)
           programIO $ next c
