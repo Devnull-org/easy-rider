@@ -6,15 +6,15 @@ import Cardano.Prelude
 
 import qualified Cardano.Mithril as Mithril
 import qualified Cardano.Node as Node
-import Data.Text (unpack)
+import System.Directory (doesDirectoryExist)
 import Text.RawString.QQ
 
 -- * Mithil typeclass
 class Monad m => Mithril m where
-  downloadSnapshot :: Text -> m ()
+  downloadSnapshot :: m ()
 
 instance Mithril IO where
-  downloadSnapshot = Mithril.downloadSnapshot . unpack
+  downloadSnapshot = Mithril.listAndDownloadLastSnapshot
 
 -- * Cardano Node
 
@@ -24,74 +24,51 @@ class Monad m => CardanoNode m where
 instance CardanoNode IO where
   runCardanoNode = Node.runCardanoNode
 
-interpretCardanoNodeIO :: CardanoNode IO => Node.NodeArguments -> IO ()
+interpretCardanoNodeIO :: Node.NodeArguments -> IO ()
 interpretCardanoNodeIO = runCardanoNode
 
 -- * Program
 
-class Monad m => Command m where
+class (Mithril m, CardanoNode m) => Command m where
   startTheNode :: Node.AvailableNetworks -> m ()
   unknownCommand :: m ()
 
 class (Command m, Monad m) => Program m where
   displaySplash :: m ()
   displayPrompt :: m ()
-  getUserInput :: m ()
-  parseUserInput :: m ()
-  handleCommand :: m ()
+  getUserInput :: m Text
+  parseAndHandleUserInput :: Text -> m ()
 
--- programIO :: Program a -> IO a
--- programIO prog =
---   case runFree prog of
---     Pure x -> return x
---     Free (DisplaySplash next) -> do
---       putText splash
---       programIO $ next splash
---     Free (DisplayPrompt next) -> do
---       putText prompt
---       programIO $ next prompt
---     Free (GetInput next) -> do
---       x <- getLine
---       programIO $ next x
---     Free (ParseInput t next) ->
---       case readMaybe t :: Maybe AvailableNetworks of
---         Just network -> programIO $ next (StartTheNode network)
---         Nothing -> programIO $ next UnknownCommand
---     Free (HandleCommand c next) ->
---       case c of
---         StartTheNode network -> do
---           let na =
---                 NodeArguments
---                   { naNetworkId = toNetworkId network
---                   , naNodeSocket = "./."
---                   }
---           dbExists <- doesDirectoryExist "db"
---           if dbExists
---             then do
---               _ <- runCardanoNode na
---               programIO $ next c
---             else do
---               listAndDownloadLastSnapshot
---               _ <- runCardanoNode na
---               programIO $ next c
---         UnknownCommand -> do
---           putStrLn ("Unknown command. Please try again." :: Text)
---           programIO $ next c
---
--- -- | Simpler version of the program
--- program' :: FreeT CardanoNode Mithril ()
--- program' = do
---   _ <- lift mithrilProgram
---   liftF startTheNode
---
--- interpretIO' :: NodeArguments -> FreeT CardanoNode Mithril a -> IO a
--- interpretIO' na prog = do
---   x <- interpretMithrilIO $ runFreeT prog
---   case x of
---     Pure a -> return a
---     Free a -> do
---       next <- interpretCardanoNodeIO na a
---       interpretIO' na next
+instance Command IO where
+  startTheNode network = do
+    let na =
+          Node.NodeArguments
+            { Node.naNetworkId = Node.toNetworkId network
+            , Node.naNodeSocket = "./."
+            }
+    dbExists <- doesDirectoryExist "db"
+    if dbExists
+      then do
+        interpretCardanoNodeIO na
+      else do
+        downloadSnapshot
+        interpretCardanoNodeIO na
+  unknownCommand =
+    putStrLn ("Unknown command. Please try again." :: Text)
+
+instance Program IO where
+  displaySplash = putText splash
+  displayPrompt = putText prompt
+  getUserInput = getLine
+  parseAndHandleUserInput t =
+    maybe unknownCommand startTheNode (readMaybe t :: Maybe Node.AvailableNetworks)
+
+programIO :: IO ()
+programIO = do
+  displaySplash
+  displayPrompt
+  t <- getUserInput
+  parseAndHandleUserInput t
 
 -- | TODO: Display nice prompt and use a lib to output to stdout in general.
 prompt :: Text
