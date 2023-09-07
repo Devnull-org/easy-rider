@@ -4,9 +4,9 @@ module Main where
 
 import Cardano.Prelude
 
-import Lab (program, programIO)
+import Lab2 (programIO)
 
 main :: IO ()
 main = do
-  _ <- programIO program
+  _ <- programIO
   pure ()
