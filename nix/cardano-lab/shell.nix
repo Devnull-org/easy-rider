@@ -3,6 +3,7 @@
 , cardanoLabProject
 , cardano-node
 , mithril
+, hydra-node
 , system ? builtins.currentSystem
 }:
 let
@@ -10,6 +11,7 @@ let
 
   cardano-node-pkgs = cardano-node.packages.${system};
   mithril-pkgs = mithril.packages.${system};
+  hydra-node-pkgs = hydra-node.packages.${system};
 
   cabal = pkgs.haskell-nix.cabal-install.${compiler};
 
@@ -38,6 +40,7 @@ let
     pkgs.python3Packages.jsonschema
     cardano-node-pkgs.cardano-node
     mithril-pkgs.mithril-client
+    hydra-node-pkgs.hydra-node
   ];
 
   devInputs = if withoutDevTools then [ ] else [
@@ -50,6 +53,7 @@ let
     pkgs.yq
     cardano-node-pkgs.cardano-cli
     mithril-pkgs.mithril-client
+    hydra-node-pkgs.hydra-node
   ];
 
   haskellNixShell = hsPkgs.shellFor {
@@ -100,6 +104,7 @@ let
     buildInputs = [
       cardano-node-pkgs.cardano-node
       mithril-pkgs.mithril-client
+      hydra-node-pkgs.hydra-node
       hsPkgs.cardano-lab.components.exes.cardano-lab
     ];
   };

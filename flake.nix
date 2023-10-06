@@ -11,6 +11,7 @@
     };
     cardano-node.url = "github:input-output-hk/cardano-node/8.1.2";
     mithril.url = "github:input-output-hk/mithril/2329.0";
+    hydra-node.url = "github:input-output-hk/hydra-node/0.13.0";
   };
 
   outputs =
@@ -45,7 +46,7 @@
         packages = cardanoLabPackages;
 
         devShells = (import ./nix/cardano-lab/shell.nix {
-          inherit (inputs) cardano-node mithril;
+          inherit (inputs) cardano-node mithril hydra-node;
           inherit cardanoLabProject system;
         }); 
       });
