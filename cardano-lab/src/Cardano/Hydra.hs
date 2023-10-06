@@ -19,6 +19,9 @@ runHydra = do
 
   runHydraCmd =
     [ "--node-id", "cardano-lab-node-1"
+    , "--ledger-protocol-parameters", "cardano-lab/config/protocol-parameters.json" 
+    , "--node-socket", "db/node.socket"
+    , "--testnet-magic", "2" 
     ]
 
 generateHydraKey :: IO ()
