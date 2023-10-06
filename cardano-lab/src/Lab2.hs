@@ -8,6 +8,7 @@ import qualified Cardano.Mithril as Mithril
 import qualified Cardano.Node as Node
 import System.Directory (doesDirectoryExist)
 import Text.RawString.QQ
+import qualified Cardano.Hydra as Hydra
 
 -- * Mithil typeclass
 class Monad m => Mithril m where
@@ -27,6 +28,12 @@ instance CardanoNode IO where
 interpretCardanoNodeIO :: Node.NodeArguments -> IO ()
 interpretCardanoNodeIO = runCardanoNode
 
+-- * Hydra typeclass
+class Monad m => Hydra m where
+  runHydra :: m ()
+
+instance Hydra IO where
+  runHydra = Hydra.runHydra
 -- * Program
 
 class (Mithril m, CardanoNode m) => Command m where
@@ -60,8 +67,9 @@ instance Program IO where
   displaySplash = putText splash
   displayPrompt = putText prompt
   getUserInput = getLine
-  parseAndHandleUserInput t =
-    maybe unknownCommand startTheNode (readMaybe t :: Maybe Node.AvailableNetworks)
+  parseAndHandleUserInput t = case t of
+     "Hydra" -> Hydra.runHydra 
+     _ -> maybe unknownCommand startTheNode (readMaybe t :: Maybe Node.AvailableNetworks)
 
 programIO :: IO ()
 programIO = do
@@ -83,15 +91,21 @@ splash =
 / /___/ /_/ / /  / /_/ / /_/ / / / / /_/ /  / /___/ /_/ / /_/ /
 \____/\__,_/_/   \__,_/\__,_/_/ /_/\____/  /_____/\__,_/_.___/ 
                                        
-> Description: Start cardano-node on the specified network using mithril-client
-> to download the latest snapshot. 
-> mithril-client will download the latest snapshot for specified network into the "db"
-> directory in the root of the project.
-> If this directory is not empty it is the user responsibility to make sure 
-> each subsequent run of this app is using the same network identifier or delete
-> the folder before running the cardano-lab app.
+> Description: 
+> - Start cardano-node on the specified network using mithril-client
+>   to download the latest snapshot. 
+>
+>     mithril-client will download the latest snapshot for specified network into the "db"
+>     directory in the root of the project.
+>     If this directory is not empty it is the user responsibility to make sure 
+>     each subsequent run of this app is using the same network identifier or delete
+>     the folder before running the cardano-lab app.
+
+> - Start hydra-node connected to existing instance of cardano-node  
 >
 >  
-> Please choose the cardano-node network: 
+> Please specify the cardano-node network: 
 > Preview / Preprod / Mainnet ?
+> Or run hydra-node: 
+> Hydra
   |]
