@@ -3,6 +3,7 @@
 , pkgs
 , cardano-node
 , mithril 
+, hydra-node
 }:
 let
   nativePkgs = cardanoLabProject.hsPkgs;
