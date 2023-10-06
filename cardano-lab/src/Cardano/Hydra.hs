@@ -8,6 +8,7 @@ import System.Process (CreateProcess (std_err, std_out), StdStream (..), proc, w
 
 runHydra :: IO () 
 runHydra = do
+  generateCardanoKeys
   generateHydraKey
   let hydraProc = proc "hydra-node" runHydraCmd
   withCreateProcess hydraProc{std_out = Inherit, std_err = Inherit} $
@@ -36,6 +37,22 @@ generateHydraKey = do
    runHydraCmd =
      [ "gen-hydra-key"
      , "--output-file", "hydra"
+     ]
+
+generateCardanoKeys :: IO ()
+generateCardanoKeys = do
+  let hydraProc = proc "cardano-cli" runCardanoCliCmd
+  withCreateProcess hydraProc{std_out = Inherit, std_err = Inherit} $
+    \_stdin mout _stderr processHandle ->
+      race_
+        (checkProcessHasFinished "cardano-cli" processHandle)
+        (outputLines mout)
+  where 
+   runCardanoCliCmd =
+     [ "address"
+     , "key-gen"
+     , "--signing-key-file", "cardano.sk"
+     , "--verification-key-file", "cardano.vk"
      ]
 
 outputLines :: Maybe Handle -> IO ()
