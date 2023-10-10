@@ -1,5 +1,7 @@
 module Cardano.Mithril where
 
+import Cardano.Api (NetworkId)
+import Cardano.Node (networkIdToString)
 import Cardano.Prelude hiding (getContents)
 import Cardano.Util (checkProcessHasFinished)
 import Control.Lens ((^?))
@@ -9,18 +11,18 @@ import GHC.Base (String, error)
 import GHC.IO.Handle (hGetLine)
 import System.Process (CreateProcess (std_err, std_out), StdStream (..), proc, readCreateProcess, withCreateProcess)
 
-listAndDownloadLastSnapshot :: IO () 
-listAndDownloadLastSnapshot = do
+listAndDownloadLastSnapshot :: NetworkId -> IO ()
+listAndDownloadLastSnapshot networkId = do
   let mithrilProc = proc "mithril-client" listSnapshotsArgs
   snapshotsJson <- readCreateProcess mithrilProc ""
   case snapshotsJson ^? nth 0 . key "digest" . _String of
     -- TODO: throw concrete exception here
     Nothing -> error "Could not get the last snapshot digest"
-    Just snapshot -> downloadSnapshot $ T.unpack snapshot
+    Just snapshot -> downloadSnapshot networkId $ T.unpack snapshot
  where
   listSnapshotsArgs =
     [ "--run-mode"
-    , "preview"
+    , networkIdToString networkId
     , "--config-directory"
     , "cardano-lab/config/mithril/network"
     , "snapshot"
@@ -28,8 +30,8 @@ listAndDownloadLastSnapshot = do
     , "--json"
     ]
 
-downloadSnapshot :: String -> IO () 
-downloadSnapshot snapshot = do
+downloadSnapshot :: NetworkId -> String -> IO ()
+downloadSnapshot networkId snapshot = do
   let mithrilProc = proc "mithril-client" (downloadSnapshotCmd snapshot)
   withCreateProcess mithrilProc{std_out = Inherit, std_err = Inherit} $
     \_stdin mout _stderr processHandle ->
@@ -56,7 +58,7 @@ downloadSnapshot snapshot = do
 
   downloadSnapshotCmd sn =
     [ "--run-mode"
-    , "preview"
+    , networkIdToString networkId
     , "--config-directory"
     , "cardano-lab/config/mithril/network"
     , "snapshot"

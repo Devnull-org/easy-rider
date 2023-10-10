@@ -1,6 +1,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Lab2 where
+module Lab3 where
 
 import Cardano.Prelude
 
@@ -16,7 +16,7 @@ class Monad m => Mithril m where
   downloadSnapshot :: m ()
 
 instance Mithril IO where
-  downloadSnapshot = Mithril.listAndDownloadLastSnapshot (Testnet (NetworkMagic 2))
+  downloadSnapshot = Mithril.listAndDownloadLastSnapshot (Testnet (NetworkMagic 2)) 
 
 -- * Cardano Node
 
