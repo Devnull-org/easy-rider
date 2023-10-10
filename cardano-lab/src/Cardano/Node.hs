@@ -29,6 +29,7 @@ import Cardano.Api (
  )
 import Cardano.Prelude
 import Cardano.Util (checkProcessHasFinished)
+import Data.String (String)
 import System.Directory (doesFileExist, getCurrentDirectory, removeFile)
 import System.FilePath ((</>))
 import System.Process (CreateProcess (..), StdStream (..), proc, withCreateProcess)
@@ -143,6 +144,15 @@ toNetworkId =
     Cardano.Node.Mainnet -> Cardano.Api.Mainnet
     Cardano.Node.Preview -> Testnet (NetworkMagic 1)
     Cardano.Node.Preprod -> Testnet (NetworkMagic 2)
+
+networkIdToString :: NetworkId -> String
+networkIdToString =
+  \case
+    Cardano.Api.Mainnet -> "mainnet"
+    Testnet (NetworkMagic 1) -> "preprod"
+    Testnet (NetworkMagic 2) -> "preview"
+    -- TODO: throw real exception here
+    _ -> error "Can't parse network id to string"
 
 -- | Wait for the node socket file to become available.
 waitForSocket :: NodeSocket -> IO ()

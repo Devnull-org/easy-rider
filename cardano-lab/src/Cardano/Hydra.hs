@@ -1,4 +1,3 @@
-
 module Cardano.Hydra where
 
 import Cardano.Prelude hiding (getContents)
@@ -6,10 +5,11 @@ import Cardano.Util (checkProcessHasFinished)
 import GHC.IO.Handle (hGetLine)
 import System.Process (CreateProcess (std_err, std_out), StdStream (..), proc, withCreateProcess)
 
-runHydra :: IO () 
+runHydra :: IO ()
 runHydra = do
   generateCardanoKeys
   generateHydraKey
+  publishHydraScripts
   let hydraProc = proc "hydra-node" runHydraCmd
   withCreateProcess hydraProc{std_out = Inherit, std_err = Inherit} $
     \_stdin mout _stderr processHandle ->
@@ -17,12 +17,15 @@ runHydra = do
         (checkProcessHasFinished "hydra-node" processHandle)
         (outputLines mout)
  where
-
   runHydraCmd =
-    [ "--node-id", "cardano-lab-node-1"
-    , "--ledger-protocol-parameters", "cardano-lab/config/protocol-parameters.json" 
-    , "--node-socket", "db/node.socket"
-    , "--testnet-magic", "2" 
+    [ "--node-id"
+    , "cardano-lab-node-1"
+    , "--ledger-protocol-parameters"
+    , "cardano-lab/config/protocol-parameters.json"
+    , "--node-socket"
+    , "db/node.socket"
+    , "--testnet-magic"
+    , "2"
     ]
 
 generateHydraKey :: IO ()
@@ -33,11 +36,31 @@ generateHydraKey = do
       race_
         (checkProcessHasFinished "hydra-node" processHandle)
         (outputLines mout)
-  where 
-   runHydraCmd =
-     [ "gen-hydra-key"
-     , "--output-file", "hydra"
-     ]
+ where
+  runHydraCmd =
+    [ "gen-hydra-key"
+    , "--output-file"
+    , "hydra"
+    ]
+
+publishHydraScripts :: IO ()
+publishHydraScripts = do
+  let hydraProc = proc "hydra-node" runHydraCmd
+  withCreateProcess hydraProc{std_out = Inherit, std_err = Inherit} $
+    \_stdin mout _stderr processHandle ->
+      race_
+        (checkProcessHasFinished "hydra-node" processHandle)
+        (outputLines mout)
+ where
+  runHydraCmd =
+    [ "publish-scripts"
+    , "--node-socket"
+    , "db/node.socket"
+    , "--cardano-signing-key"
+    , "cardano.sk"
+    , "--testnet-magic"
+    , "2"
+    ]
 
 generateCardanoKeys :: IO ()
 generateCardanoKeys = do
@@ -47,13 +70,15 @@ generateCardanoKeys = do
       race_
         (checkProcessHasFinished "cardano-cli" processHandle)
         (outputLines mout)
-  where 
-   runCardanoCliCmd =
-     [ "address"
-     , "key-gen"
-     , "--signing-key-file", "cardano.sk"
-     , "--verification-key-file", "cardano.vk"
-     ]
+ where
+  runCardanoCliCmd =
+    [ "address"
+    , "key-gen"
+    , "--signing-key-file"
+    , "cardano.sk"
+    , "--verification-key-file"
+    , "cardano.vk"
+    ]
 
 outputLines :: Maybe Handle -> IO ()
 outputLines mout = do
@@ -74,4 +99,3 @@ processLines :: Handle -> IO ()
 processLines out = do
   line <- hGetLine out
   putStrLn line
-

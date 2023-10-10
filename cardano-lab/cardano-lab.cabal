@@ -66,16 +66,19 @@ library
     Cardano.Util
     Lab
     Lab2
+    Lab3
+    Options
 
   build-depends:
     , base
-    , cardano-api      >=1.36.0
+    , cardano-api           >=1.36.0
     , cardano-prelude
     , directory
     , filepath
     , free
     , lens
     , lens-aeson
+    , optparse-applicative
     , process
     , raw-strings-qq
     , text

@@ -4,6 +4,7 @@ module Lab where
 
 import Cardano.Prelude
 
+import Cardano.Api (NetworkId (..), NetworkMagic (..))
 import Cardano.Mithril (listAndDownloadLastSnapshot)
 import Cardano.Node (AvailableNetworks, NodeArguments (..), runCardanoNode, toNetworkId)
 import Control.Monad.Trans.Free (Free, FreeF (..), FreeT (..), liftF, runFree)
@@ -30,7 +31,7 @@ interpretMithrilIO prog =
   case runFree prog of
     Pure a -> return a
     Free (DownloadSnapshot next) -> do
-      listAndDownloadLastSnapshot
+      listAndDownloadLastSnapshot (Testnet (NetworkMagic 2))
       interpretMithrilIO next
 
 -- * Cardano Node
@@ -131,7 +132,7 @@ programIO prog =
               _ <- runCardanoNode na
               programIO $ next c
             else do
-              listAndDownloadLastSnapshot
+              listAndDownloadLastSnapshot (Testnet (NetworkMagic 2))
               _ <- runCardanoNode na
               programIO $ next c
         UnknownCommand -> do
