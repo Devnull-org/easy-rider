@@ -62,6 +62,11 @@ publishHydraScripts = do
     , "2"
     ]
 
+fundFromFaucet :: NetworkId -> String -> IO ()
+fundFromFaucet networkId address = undefined
+
+-- https://faucet.preprod.world.dev.cardano.org/send-money/address?api_key=ooseiteiquo7Wie9oochooyiequi4ooc
+-- curl -X POST -s "https://faucet.preview.world.dev.cardano.org/send-money/address?api_key=nohnuXahthoghaeNoht9Aow3ze4quohc"
 generateCardanoKeys :: IO ()
 generateCardanoKeys = do
   let hydraProc = proc "cardano-cli" runCardanoCliCmd
