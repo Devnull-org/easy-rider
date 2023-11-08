@@ -125,6 +125,7 @@ programIO prog =
                 NodeArguments
                   { naNetworkId = toNetworkId network
                   , naNodeSocket = "./."
+                  , naPreventOutput = False 
                   }
           dbExists <- doesDirectoryExist "db"
           if dbExists

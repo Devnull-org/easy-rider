@@ -1,5 +1,7 @@
 module Cardano.Hydra where
 
+import Cardano.Api (SlotNo)
+import Cardano.Node (NodeArguments, queryTipSlotNo)
 import Cardano.Prelude hiding (getContents)
 import Cardano.Util (checkProcessHasFinished)
 import GHC.IO.Handle (hGetLine)
@@ -25,8 +27,24 @@ runHydra = do
     , "--node-socket"
     , "db/node.socket"
     , "--testnet-magic"
-    , "2"
+    , "1"
     ]
+
+waitOnSlotNumber :: NodeArguments -> SlotNo -> IO () -> IO ()
+waitOnSlotNumber nodeArgs slotNo action = do
+  eSlotNo <- try $ queryTipSlotNo nodeArgs
+  case eSlotNo of
+    Left (err :: SomeException) -> putTextLn (show err) >> tryAgain
+    Right slotNo' ->
+      if slotNo' >= slotNo
+        then action
+        else do
+          putTextLn ("Waiting on slot " <> show slotNo <> " currently at " <> show slotNo')
+          tryAgain
+ where
+  tryAgain =
+    threadDelay 1000000
+      >> waitOnSlotNumber nodeArgs slotNo action
 
 generateHydraKey :: IO ()
 generateHydraKey = do
@@ -59,11 +77,11 @@ publishHydraScripts = do
     , "--cardano-signing-key"
     , "cardano.sk"
     , "--testnet-magic"
-    , "2"
+    , "1"
     ]
 
-fundFromFaucet :: NetworkId -> String -> IO ()
-fundFromFaucet networkId address = undefined
+-- fundFromFaucet :: NetworkId -> String -> IO ()
+-- fundFromFaucet networkId address = undefined
 
 -- https://faucet.preprod.world.dev.cardano.org/send-money/address?api_key=ooseiteiquo7Wie9oochooyiequi4ooc
 -- curl -X POST -s "https://faucet.preview.world.dev.cardano.org/send-money/address?api_key=nohnuXahthoghaeNoht9Aow3ze4quohc"

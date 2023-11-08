@@ -53,6 +53,7 @@ instance Command IO where
           Node.NodeArguments
             { Node.naNetworkId = Node.toNetworkId network
             , Node.naNodeSocket = "./."
+            , Node.naPreventOutput = False 
             }
     dbExists <- doesDirectoryExist "db"
     if dbExists

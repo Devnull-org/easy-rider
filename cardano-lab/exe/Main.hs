@@ -4,7 +4,7 @@ module Main where
 
 import Cardano.Prelude
 
-import Cardano.Mithril
+import Cardano.Hydra
 import Cardano.Node
 import Options
 
@@ -17,7 +17,18 @@ main = do
             NodeArguments
               { naNetworkId = networkId
               , naNodeSocket = "./."
+              , naPreventOutput = False
+              }
+      runCardanoNode nodeArguments
+    RunHydraNode HydraNodeOptions{hydraNetworkId, startAtSlot} -> do
+      let nodeArguments =
+            NodeArguments
+              { naNetworkId = hydraNetworkId
+              , naNodeSocket = "./."
+              , naPreventOutput = False
               }
 
-      listAndDownloadLastSnapshot networkId
-      runCardanoNode nodeArguments
+      void $
+        concurrently
+          (runCardanoNode nodeArguments)
+          (waitOnSlotNumber nodeArguments startAtSlot runHydra)

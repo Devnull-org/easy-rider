@@ -38,6 +38,7 @@ import Prelude (error)
 data NodeArguments = NodeArguments
   { naNetworkId :: NetworkId
   , naNodeSocket :: FilePath
+  , naPreventOutput :: Bool
   }
   deriving (Eq, Show)
 
@@ -86,9 +87,10 @@ runCardanoNode = withCardanoNode
 withCardanoNode ::
   NodeArguments ->
   IO ()
-withCardanoNode NodeArguments{naNetworkId, naNodeSocket} = do
+withCardanoNode NodeArguments{naNetworkId, naNodeSocket, naPreventOutput} = do
   p <- process
-  withCreateProcess p{std_out = Inherit, std_err = Inherit} $
+  let output = if naPreventOutput then NoStream else Inherit
+  withCreateProcess p{std_out = output, std_err = output} $
     \_stdin _stdout _stderr processHandle ->
       ( race
           (checkProcessHasFinished "cardano-node" processHandle)
@@ -115,8 +117,9 @@ withCardanoNode NodeArguments{naNetworkId, naNodeSocket} = do
 
 -- | Query the latest chain point just for the slot number.
 queryTipSlotNo :: NodeArguments -> IO SlotNo
-queryTipSlotNo NodeArguments{naNetworkId, naNodeSocket} =
-  getLocalChainTip (localNodeConnectInfo naNetworkId (File naNodeSocket)) >>= \case
+queryTipSlotNo NodeArguments{naNetworkId} =
+  -- TODO: correctly thread through node.socket path
+  getLocalChainTip (localNodeConnectInfo naNetworkId (File "./db/node.socket")) >>= \case
     ChainTipAtGenesis -> pure 0
     ChainTip slotNo _ _ -> pure slotNo
 

@@ -4,19 +4,19 @@ module Lab3 where
 
 import Cardano.Prelude
 
+import Cardano.Api (NetworkId (..), NetworkMagic (..))
+import qualified Cardano.Hydra as Hydra
 import qualified Cardano.Mithril as Mithril
 import qualified Cardano.Node as Node
 import System.Directory (doesDirectoryExist)
 import Text.RawString.QQ
-import qualified Cardano.Hydra as Hydra
-import Cardano.Api (NetworkMagic(..), NetworkId (..))
 
 -- * Mithil typeclass
 class Monad m => Mithril m where
   downloadSnapshot :: m ()
 
 instance Mithril IO where
-  downloadSnapshot = Mithril.listAndDownloadLastSnapshot (Testnet (NetworkMagic 2)) 
+  downloadSnapshot = Mithril.listAndDownloadLastSnapshot (Testnet (NetworkMagic 2))
 
 -- * Cardano Node
 
@@ -53,6 +53,7 @@ instance Command IO where
           Node.NodeArguments
             { Node.naNetworkId = Node.toNetworkId network
             , Node.naNodeSocket = "./."
+            , Node.naPreventOutput = False
             }
     dbExists <- doesDirectoryExist "db"
     if dbExists
@@ -69,8 +70,8 @@ instance Program IO where
   displayPrompt = putText prompt
   getUserInput = getLine
   parseAndHandleUserInput t = case t of
-     "Hydra" -> Hydra.runHydra 
-     _ -> maybe unknownCommand startTheNode (readMaybe t :: Maybe Node.AvailableNetworks)
+    "Hydra" -> Hydra.runHydra
+    _ -> maybe unknownCommand startTheNode (readMaybe t :: Maybe Node.AvailableNetworks)
 
 programIO :: IO ()
 programIO = do
