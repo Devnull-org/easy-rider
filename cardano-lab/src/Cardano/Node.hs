@@ -73,10 +73,9 @@ runCardanoNode = withCardanoNode
 withCardanoNode ::
   NodeArguments ->
   IO ()
-withCardanoNode NodeArguments{naNetworkId, naNodeSocket, naPreventOutput} = do
+withCardanoNode NodeArguments{naNetworkId, naNodeSocket} = do
   p <- process
-  let output = if naPreventOutput then NoStream else Inherit
-  withCreateProcess p{std_out = output, std_err = output} $
+  withCreateProcess p{std_out = Inherit, std_err = Inherit} $
     \_stdin _stdout _stderr processHandle ->
       ( race
           (checkProcessHasFinished "cardano-node" processHandle)

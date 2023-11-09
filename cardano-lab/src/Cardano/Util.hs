@@ -54,6 +54,23 @@ waitForSocket nodeSocket =
     threadDelay 1
     waitForSocket nodeSocket
 
+waitOnSlotNumber :: HydraNodeArguments -> SlotNo -> IO () -> IO ()
+waitOnSlotNumber hydraNodeArgs slotNo action = do
+  eSlotNo <- try $ queryTipSlotNo hydraNodeArgs
+  case eSlotNo of
+    -- TODO: distinguish real error from cardano-node just syncing
+    Left (_err :: SomeException) -> putTextLn "Waiting on cardano-node socket..." >> tryAgain
+    Right slotNo' ->
+      if slotNo' >= slotNo
+        then action
+        else do
+          putTextLn ("Waiting on slot " <> show slotNo <> " currently at " <> show slotNo')
+          tryAgain
+ where
+  tryAgain =
+    threadDelay 3000000
+      >> waitOnSlotNumber hydraNodeArgs slotNo action
+
 -- | Query the latest chain point just for the slot number.
 queryTipSlotNo :: HydraNodeArguments -> IO SlotNo
 queryTipSlotNo HydraNodeArguments{hnNetworkId, hnNodeSocket} =

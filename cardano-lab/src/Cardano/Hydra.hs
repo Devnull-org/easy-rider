@@ -1,13 +1,12 @@
 module Cardano.Hydra where
 
-import Cardano.Api (SlotNo)
 import Cardano.Prelude hiding (getContents)
-import Cardano.Util (HydraNodeArguments (..), checkProcessHasFinished, networkIdToArg, queryTipSlotNo)
-import GHC.IO.Handle (hGetLine)
+import Cardano.Util (HydraNodeArguments (..), checkProcessHasFinished, networkIdToArg)
+import GHC.IO.Handle (hFlush, hGetLine)
 import System.Process (CreateProcess (std_err, std_out), StdStream (..), proc, withCreateProcess)
 
 runHydra :: HydraNodeArguments -> IO ()
-runHydra HydraNodeArguments{hnNetworkId, hnNodeSocket} = do
+runHydra HydraNodeArguments{hnPreventOutput, hnNetworkId, hnNodeSocket} = do
   generateCardanoKeys
   generateHydraKey
   publishHydraScripts
@@ -16,7 +15,7 @@ runHydra HydraNodeArguments{hnNetworkId, hnNodeSocket} = do
     \_stdin mout _stderr processHandle ->
       race_
         (checkProcessHasFinished "hydra-node" processHandle)
-        (outputLines mout)
+        (outputLines mout hnPreventOutput)
  where
   runHydraCmd =
     [ "--node-id"
@@ -28,23 +27,6 @@ runHydra HydraNodeArguments{hnNetworkId, hnNodeSocket} = do
     ]
       <> networkIdToArg hnNetworkId
 
-waitOnSlotNumber :: HydraNodeArguments -> SlotNo -> IO () -> IO ()
-waitOnSlotNumber hydraNodeArgs slotNo action = do
-  eSlotNo <- try $ queryTipSlotNo hydraNodeArgs
-  case eSlotNo of
-    -- TODO: distinguish real error from cardano-node just syncing
-    Left (_err :: SomeException) -> putTextLn "Waiting on cardano-node socket..." >> tryAgain
-    Right slotNo' ->
-      if slotNo' >= slotNo
-        then action
-        else do
-          putTextLn ("Waiting on slot " <> show slotNo <> " currently at " <> show slotNo')
-          tryAgain
- where
-  tryAgain =
-    threadDelay 3000000
-      >> waitOnSlotNumber hydraNodeArgs slotNo action
-
 generateHydraKey :: IO ()
 generateHydraKey = do
   let hydraProc = proc "hydra-node" runHydraCmd
@@ -52,7 +34,7 @@ generateHydraKey = do
     \_stdin mout _stderr processHandle ->
       race_
         (checkProcessHasFinished "hydra-node" processHandle)
-        (outputLines mout)
+        (outputLines mout False)
  where
   runHydraCmd =
     [ "gen-hydra-key"
@@ -67,7 +49,7 @@ publishHydraScripts = do
     \_stdin mout _stderr processHandle ->
       race_
         (checkProcessHasFinished "hydra-node" processHandle)
-        (outputLines mout)
+        (outputLines mout False)
  where
   runHydraCmd =
     [ "publish-scripts"
@@ -91,7 +73,7 @@ generateCardanoKeys = do
     \_stdin mout _stderr processHandle ->
       race_
         (checkProcessHasFinished "cardano-cli" processHandle)
-        (outputLines mout)
+        (outputLines mout False)
  where
   runCardanoCliCmd =
     [ "address"
@@ -102,11 +84,11 @@ generateCardanoKeys = do
     , "cardano.vk"
     ]
 
-outputLines :: Maybe Handle -> IO ()
-outputLines mout = do
+outputLines :: Maybe Handle -> Bool -> IO ()
+outputLines mout preventOutput = do
   let delaySeconds :: Int = 2
   out <- waitForHandle delaySeconds mout
-  processLines out
+  if preventOutput then hFlush out else processLines out
 
 waitForHandle :: Num t => t -> Maybe b -> IO b
 waitForHandle n mhandle =
