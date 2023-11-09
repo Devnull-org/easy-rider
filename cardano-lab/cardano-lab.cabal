@@ -64,9 +64,6 @@ library
     Cardano.Mithril
     Cardano.Node
     Cardano.Util
-    Lab
-    Lab2
-    Lab3
     Options
 
   build-depends:
@@ -75,12 +72,10 @@ library
     , cardano-prelude
     , directory
     , filepath
-    , free
     , lens
     , lens-aeson
     , optparse-applicative
     , process
-    , raw-strings-qq
     , text
 
   ghc-options:     -haddock
