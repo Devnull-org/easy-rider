@@ -1,9 +1,8 @@
 module Cardano.Mithril where
 
 import Cardano.Api (NetworkId)
-import Cardano.Node (networkIdToString)
 import Cardano.Prelude hiding (getContents)
-import Cardano.Util (checkProcessHasFinished)
+import Cardano.Util (checkProcessHasFinished, networkIdToString)
 import Control.Lens ((^?))
 import Data.Aeson.Lens (key, nth, _String)
 import qualified Data.Text as T

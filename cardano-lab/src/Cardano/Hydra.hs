@@ -1,21 +1,13 @@
 module Cardano.Hydra where
 
-import Cardano.Api (NetworkId, SlotNo)
-import Cardano.Node (NodeArguments, queryTipSlotNo)
+import Cardano.Api (SlotNo)
 import Cardano.Prelude hiding (getContents)
-import Cardano.Util (checkProcessHasFinished)
+import Cardano.Util (HydraNodeArguments (..), checkProcessHasFinished, networkIdToArg, queryTipSlotNo)
 import GHC.IO.Handle (hGetLine)
 import System.Process (CreateProcess (std_err, std_out), StdStream (..), proc, withCreateProcess)
 
-data HydraNodeArguments = HydraNodeArguments
-  { hnNetworkId :: NetworkId
-  , hnNodeSocket :: FilePath
-  , hnPreventOutput :: Bool
-  }
-  deriving (Eq, Show)
-
 runHydra :: HydraNodeArguments -> IO ()
-runHydra HydraNodeArguments{} = do
+runHydra HydraNodeArguments{hnNetworkId, hnNodeSocket} = do
   generateCardanoKeys
   generateHydraKey
   publishHydraScripts
@@ -32,16 +24,16 @@ runHydra HydraNodeArguments{} = do
     , "--ledger-protocol-parameters"
     , "cardano-lab/config/protocol-parameters.json"
     , "--node-socket"
-    , "db/node.socket"
-    , "--testnet-magic"
-    , "1"
+    , hnNodeSocket
     ]
+      <> networkIdToArg hnNetworkId
 
-waitOnSlotNumber :: NodeArguments -> SlotNo -> IO () -> IO ()
-waitOnSlotNumber nodeArgs slotNo action = do
-  eSlotNo <- try $ queryTipSlotNo nodeArgs
+waitOnSlotNumber :: HydraNodeArguments -> SlotNo -> IO () -> IO ()
+waitOnSlotNumber hydraNodeArgs slotNo action = do
+  eSlotNo <- try $ queryTipSlotNo hydraNodeArgs
   case eSlotNo of
-    Left (err :: SomeException) -> putTextLn (show err) >> tryAgain
+    -- TODO: distinguish real error from cardano-node just syncing
+    Left (_err :: SomeException) -> putTextLn "Waiting on cardano-node socket..." >> tryAgain
     Right slotNo' ->
       if slotNo' >= slotNo
         then action
@@ -50,8 +42,8 @@ waitOnSlotNumber nodeArgs slotNo action = do
           tryAgain
  where
   tryAgain =
-    threadDelay 1000000
-      >> waitOnSlotNumber nodeArgs slotNo action
+    threadDelay 3000000
+      >> waitOnSlotNumber hydraNodeArgs slotNo action
 
 generateHydraKey :: IO ()
 generateHydraKey = do

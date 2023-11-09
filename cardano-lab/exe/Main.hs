@@ -6,6 +6,7 @@ import Cardano.Prelude
 
 import Cardano.Hydra
 import Cardano.Node
+import Cardano.Util (HydraNodeArguments (..), NodeArguments (..))
 import Options
 
 main :: IO ()
@@ -17,10 +18,9 @@ main = do
             NodeArguments
               { naNetworkId = networkId
               , naNodeSocket = "./."
-              , naPreventOutput = False
+              , naPreventOutput = True
               }
       runCardanoNode nodeArguments
-
     RunHydraNode HydraNodeOptions{hydraNetworkId, startAtSlot} -> do
       let hydraNodeArguments =
             HydraNodeArguments
@@ -39,4 +39,4 @@ main = do
       void $
         concurrently
           (runCardanoNode nodeArguments)
-          (waitOnSlotNumber nodeArguments startAtSlot (runHydra hydraNodeArguments))
+          (waitOnSlotNumber hydraNodeArguments startAtSlot (runHydra hydraNodeArguments))

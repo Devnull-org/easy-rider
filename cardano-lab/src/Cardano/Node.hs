@@ -1,8 +1,6 @@
 module Cardano.Node where
 
 import Cardano.Api (
-  CardanoMode,
-  ChainTip (ChainTip, ChainTipAtGenesis),
   ConsensusModeParams (CardanoModeParams),
   EpochSlots (EpochSlots),
   File (File),
@@ -22,25 +20,14 @@ import Cardano.Api (
   ),
   NetworkId (Mainnet, Testnet),
   NetworkMagic (NetworkMagic),
-  SlotNo,
-  SocketPath,
   connectToLocalNode,
-  getLocalChainTip,
  )
 import Cardano.Prelude
-import Cardano.Util (checkProcessHasFinished)
-import Data.String (String)
+import Cardano.Util (NodeArguments (..), NodeSocket, checkProcessHasFinished, waitForSocket)
 import System.Directory (doesFileExist, getCurrentDirectory, removeFile)
 import System.FilePath ((</>))
 import System.Process (CreateProcess (..), StdStream (..), proc, withCreateProcess)
 import Prelude (error)
-
-data NodeArguments = NodeArguments
-  { naNetworkId :: NetworkId
-  , naNodeSocket :: FilePath
-  , naPreventOutput :: Bool
-  }
-  deriving (Eq, Show)
 
 data NodeHandle a = NodeHandle
   { startNode :: IO (Async a)
@@ -54,7 +41,6 @@ data AvailableNetworks
   deriving (Eq, Show, Read)
 
 type Port = Int
-type NodeSocket = FilePath
 
 -- | Arguments given to the 'cardano-node' command-line to run a node.
 data CardanoNodeArgs = CardanoNodeArgs
@@ -115,22 +101,6 @@ withCardanoNode NodeArguments{naNetworkId, naNodeSocket, naPreventOutput} = do
     whenM (doesFileExist naNodeSocket) $
       removeFile naNodeSocket
 
--- | Query the latest chain point just for the slot number.
-queryTipSlotNo :: NodeArguments -> IO SlotNo
-queryTipSlotNo NodeArguments{naNetworkId} =
-  -- TODO: correctly thread through node.socket path
-  getLocalChainTip (localNodeConnectInfo naNetworkId (File "./db/node.socket")) >>= \case
-    ChainTipAtGenesis -> pure 0
-    ChainTip slotNo _ _ -> pure slotNo
-
-localNodeConnectInfo :: NetworkId -> SocketPath -> LocalNodeConnectInfo CardanoMode
-localNodeConnectInfo = LocalNodeConnectInfo cardanoModeParams
-
-cardanoModeParams :: ConsensusModeParams CardanoMode
-cardanoModeParams = CardanoModeParams $ EpochSlots defaultByronEpochSlots
- where
-  defaultByronEpochSlots = 21600 :: Word64
-
 networkIdToNodeConfigPath :: FilePath -> NetworkId -> FilePath
 networkIdToNodeConfigPath cwd network =
   let basePath = cwd </> "cardano-lab" </> "config" </> "cardano-configurations" </> "network"
@@ -140,29 +110,6 @@ networkIdToNodeConfigPath cwd network =
         Testnet (NetworkMagic 2) -> basePath </> "preview" </> "cardano-node"
         Testnet (NetworkMagic 1097911063) -> basePath </> "testnet" </> "cardano-node"
         _ -> error "TODO: implement running on devnet"
-
-toNetworkId :: AvailableNetworks -> NetworkId
-toNetworkId =
-  \case
-    Cardano.Node.Mainnet -> Cardano.Api.Mainnet
-    Cardano.Node.Preview -> Testnet (NetworkMagic 1)
-    Cardano.Node.Preprod -> Testnet (NetworkMagic 2)
-
-networkIdToString :: NetworkId -> String
-networkIdToString =
-  \case
-    Cardano.Api.Mainnet -> "mainnet"
-    Testnet (NetworkMagic 1) -> "preprod"
-    Testnet (NetworkMagic 2) -> "preview"
-    -- TODO: throw real exception here
-    _ -> error "Can't parse network id to string"
-
--- | Wait for the node socket file to become available.
-waitForSocket :: NodeSocket -> IO ()
-waitForSocket nodeSocket =
-  unlessM (doesFileExist nodeSocket) $ do
-    threadDelay 1
-    waitForSocket nodeSocket
 
 defaultCardanoNodeArgs :: FilePath -> CardanoNodeArgs
 defaultCardanoNodeArgs nodeConfigPath =
