@@ -20,7 +20,15 @@ main = do
               , naPreventOutput = False
               }
       runCardanoNode nodeArguments
+
     RunHydraNode HydraNodeOptions{hydraNetworkId, startAtSlot} -> do
+      let hydraNodeArguments =
+            HydraNodeArguments
+              { hnNetworkId = hydraNetworkId
+              , hnNodeSocket = "db/node.socket"
+              , hnPreventOutput = False
+              }
+
       let nodeArguments =
             NodeArguments
               { naNetworkId = hydraNetworkId
@@ -31,4 +39,4 @@ main = do
       void $
         concurrently
           (runCardanoNode nodeArguments)
-          (waitOnSlotNumber nodeArguments startAtSlot runHydra)
+          (waitOnSlotNumber nodeArguments startAtSlot (runHydra hydraNodeArguments))

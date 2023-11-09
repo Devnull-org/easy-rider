@@ -1,14 +1,21 @@
 module Cardano.Hydra where
 
-import Cardano.Api (SlotNo)
+import Cardano.Api (NetworkId, SlotNo)
 import Cardano.Node (NodeArguments, queryTipSlotNo)
 import Cardano.Prelude hiding (getContents)
 import Cardano.Util (checkProcessHasFinished)
 import GHC.IO.Handle (hGetLine)
 import System.Process (CreateProcess (std_err, std_out), StdStream (..), proc, withCreateProcess)
 
-runHydra :: IO ()
-runHydra = do
+data HydraNodeArguments = HydraNodeArguments
+  { hnNetworkId :: NetworkId
+  , hnNodeSocket :: FilePath
+  , hnPreventOutput :: Bool
+  }
+  deriving (Eq, Show)
+
+runHydra :: HydraNodeArguments -> IO ()
+runHydra HydraNodeArguments{} = do
   generateCardanoKeys
   generateHydraKey
   publishHydraScripts
