@@ -28,4 +28,5 @@ hspec-results.md
 # Benchmark results
 *.html
 !index.html
-
+db/*
+snapshot-*
