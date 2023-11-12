@@ -54,16 +54,16 @@ waitForSocket nodeSocket =
     threadDelay 1
     waitForSocket nodeSocket
 
-waitOnSlotNumber :: HydraNodeArguments -> SlotNo -> IO () -> IO ()
+waitOnSlotNumber :: MonadIO m => HydraNodeArguments -> SlotNo -> IO () -> m ()
 waitOnSlotNumber hydraNodeArgs slotNo action = do
-  eSlotNo <- try $ queryTipSlotNo hydraNodeArgs
+  eSlotNo <- liftIO $ try $ queryTipSlotNo hydraNodeArgs
   case eSlotNo of
     -- TODO: distinguish real error from cardano-node just syncing
-    Left (_err :: SomeException) -> putTextLn "Waiting on cardano-node socket..." >> tryAgain
+    Left (_err :: SomeException) -> liftIO $ putTextLn "Waiting on cardano-node socket..." >> tryAgain
     Right slotNo' ->
       if slotNo' >= slotNo
-        then action
-        else do
+        then liftIO action
+        else liftIO $ do
           putTextLn ("Waiting on slot " <> show slotNo <> " currently at " <> show slotNo')
           tryAgain
  where

@@ -72,6 +72,7 @@ library
     , cardano-prelude
     , directory
     , filepath
+    , katip
     , lens
     , lens-aeson
     , optparse-applicative
@@ -88,6 +89,8 @@ executable cardano-lab-exe
   build-depends:
     , cardano-lab
     , cardano-prelude
+    , katip
+    , lifted-async
 
   ghc-options:    -threaded -rtsopts -with-rtsopts=-N4
 

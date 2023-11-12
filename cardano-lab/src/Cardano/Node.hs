@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Cardano.Node where
 
 import Cardano.Api (
@@ -24,6 +26,7 @@ import Cardano.Api (
  )
 import Cardano.Prelude
 import Cardano.Util (NodeArguments (..), NodeSocket, checkProcessHasFinished, waitForSocket)
+import Katip
 import System.Directory (doesFileExist, getCurrentDirectory, removeFile)
 import System.FilePath ((</>))
 import System.Process (CreateProcess (..), StdStream (..), proc, withCreateProcess)
@@ -59,32 +62,27 @@ data CardanoNodeArgs = CardanoNodeArgs
   , nodePort :: Maybe Port
   }
 
-mkNodeHandle ::
-  NodeArguments ->
-  IO (NodeHandle ())
-mkNodeHandle na = do
-  let startNode = async $ withCardanoNode na
-  let stopNode = cancel
-  pure $ NodeHandle startNode stopNode
-
-runCardanoNode :: NodeArguments -> IO ()
+runCardanoNode :: KatipContext m => NodeArguments -> m ()
 runCardanoNode = withCardanoNode
 
 withCardanoNode ::
+  KatipContext m =>
   NodeArguments ->
-  IO ()
+  m ()
 withCardanoNode NodeArguments{naNetworkId, naNodeSocket} = do
-  p <- process
-  withCreateProcess p{std_out = Inherit, std_err = Inherit} $
-    \_stdin _stdout _stderr processHandle ->
-      ( race
-          (checkProcessHasFinished "cardano-node" processHandle)
-          waitForNode
-          >>= \case
-            Left{} -> error "never should have been reached"
-            Right a -> pure a
-      )
-        `finally` cleanupSocketFile
+  $(logTM) InfoS "Starting cardano-node"
+  p <- liftIO process
+  liftIO $
+    withCreateProcess p{std_out = Inherit, std_err = Inherit} $
+      \_stdin _stdout _stderr processHandle ->
+        ( race
+            (checkProcessHasFinished "cardano-node" processHandle)
+            waitForNode
+            >>= \case
+              Left{} -> error "never should have been reached"
+              Right a -> pure a
+        )
+          `finally` cleanupSocketFile
  where
   process = do
     cwd <- getCurrentDirectory
@@ -166,9 +164,9 @@ cardanoNodeProcess cwd args =
     Nothing -> []
     Just val -> [arg, val]
 
-connectCardanoNode :: NetworkId -> NodeSocket -> IO ()
+connectCardanoNode :: MonadIO m => NetworkId -> NodeSocket -> m ()
 connectCardanoNode networkId nodeSocket =
-  connectToLocalNode connectInfo clientProtocols
+  liftIO $ connectToLocalNode connectInfo clientProtocols
  where
   connectInfo =
     LocalNodeConnectInfo
