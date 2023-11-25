@@ -29,7 +29,7 @@ and do that step by step.
 - [ ] Use proper logging library 
 - [ ] Set up CI server
 
-### Usage
+### Developing 
 
 If you use nix (hopefully) then using this app is a breeze since you have all
 of the dependencies in scope in a nix shell. 
@@ -41,5 +41,5 @@ cabal run cardano-lab
 ```
 
 If you don't use nix then you need to provide the dependencies yourself. The
-app depends on `mithril-client 2329.0`, `cardano-node 8.1.2`,  `ghc 9.2.8` and
+app depends on `mithril-client 0.3.32`, `cardano-node 8.1.2`,  `ghc 9.2.8` and
 `cabal 3.0`.
