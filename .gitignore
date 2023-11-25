@@ -15,7 +15,7 @@
 result*
 
 # Direnv
-.direnv/
+.direnv/*
 *~
 
 # hydra-node

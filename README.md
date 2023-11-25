@@ -1,13 +1,15 @@
 ```
-   ______               __                     __          __  
-  / ____/___ __________/ /___ _____  ____     / /   ____ _/ /_ 
- / /   / __ `/ ___/ __  / __ `/ __ \/ __ \   / /   / __ `/ __ \
-/ /___/ /_/ / /  / /_/ / /_/ / / / / /_/ /  / /___/ /_/ / /_/ /
-\____/\__,_/_/   \__,_/\__,_/_/ /_/\____/  /_____/\__,_/_.___/ 
-                                       
+ ______   ________   ______   __  __     ______     ________  ______   ______   ______       
+/_____/\ /_______/\ /_____/\ /_/\/_/\   /_____/\   /_______/\/_____/\ /_____/\ /_____/\      
+\::::_\/_\::: _  \ \\::::_\/_\ \ \ \ \  \:::_ \ \  \__.::._\/\:::_ \ \\::::_\/_\:::_ \ \     
+ \:\/___/\\::(_)  \ \\:\/___/\\:\_\ \ \  \:(_) ) )_   \::\ \  \:\ \ \ \\:\/___/\\:(_) ) )_   
+  \::___\/_\:: __  \ \\_::._\:\\::::_\/   \: __ `\ \  _\::\ \__\:\ \ \ \\::___\/_\: __ `\ \  
+   \:\____/\\:.\ \  \ \ /____\:\ \::\ \    \ \ `\ \ \/__\::\__/\\:\/.:| |\:\____/\\ \ `\ \ \ 
+    \_____\/ \__\/\__\/ \_____\/  \__\/     \_\/ \_\/\________\/ \____/_/ \_____\/ \_\/ \_\/ 
+                                                                                             
 ```
 
-# Cardano Lab
+# Easy Rider 
 
 This project aims to ease the life of cardano developers in the wild. Cardano
 is hard to work with and the goal is to make it just a little bit approachable,
@@ -18,14 +20,14 @@ and do that step by step.
 
 - [x] Run cardano-node and sync it as fast as possible
 - [ ] Provide option to submit a transaction to local running cardano-node 
+- [ ] Run cardano-node and sync it as fast as possible
 
 ### Tasks
 
-- [ ] Set up CI server
-- [ ] Write test that cover all use cases
-- [x] Run local cardano-node on specified network 
 - [x] Use mithril to speed up the node sync time
+- [x] Run local cardano-node on specified network 
 - [ ] Use proper logging library 
+- [ ] Set up CI server
 
 ### Usage
 
