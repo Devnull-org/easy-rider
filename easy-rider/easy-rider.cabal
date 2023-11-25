@@ -1,14 +1,14 @@
 cabal-version: 3.0
-name:          cardano-lab 
+name:          easy-rider 
 version:       0.0.1
-synopsis:      The Cardano Lab 
-author:        Sasha Bogicevic 
+synopsis:      Easy Rider 
+author:        Devnull org 
 copyright:     2023 Devnull 
 license:       Apache-2.0
 
 source-repository head
   type:     git
-  location: https://github.com/v0d1ch/cardano-lab
+  location: https://github.com/v0d1ch/easy-rider
 
 common project-config
   default-language:   Haskell2010
@@ -64,35 +64,30 @@ library
     Cardano.Mithril
     Cardano.Node
     Cardano.Util
-    Lab
-    Lab2
-    Lab3
     Options
 
   build-depends:
     , base
-    , cardano-api           >=1.36.0
+    , cardano-api
     , cardano-prelude
     , directory
     , filepath
-    , free
     , lens
     , lens-aeson
     , optparse-applicative
     , process
-    , raw-strings-qq
     , text
 
   ghc-options:     -haddock
 
-executable cardano-lab-exe
+executable easy-rider-exe
   import:         project-config
   hs-source-dirs: exe
   main-is:        Main.hs
   other-modules:
   build-depends:
-    , cardano-lab
     , cardano-prelude
+    , easy-rider
 
   ghc-options:    -threaded -rtsopts -with-rtsopts=-N4
 

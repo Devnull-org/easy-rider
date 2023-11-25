@@ -9,12 +9,14 @@ repository cardano-haskell-packages
     c00aae8461a256275598500ea0e187588c35a5d5d7454fb57eac18d9edb86a56
     d4a35cd3121aa00d18544bb0ac01c3e1691d618f462c46129271bccf39f7e8ee
 
+-- See CONTRIBUTING.md for information about when and how to update these.
 index-state:
-  , hackage.haskell.org 2023-08-02T06:54:18Z
-  , cardano-haskell-packages 2023-08-01T16:16:59Z
+  , hackage.haskell.org 2023-10-20T06:54:18Z
+  , cardano-haskell-packages 2023-10-20T16:16:59Z
+
 
 packages:
-  cardano-lab 
+  easy-rider 
 
 package *
   ghc-options: -j8

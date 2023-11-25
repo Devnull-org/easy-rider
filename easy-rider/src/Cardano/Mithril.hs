@@ -24,7 +24,7 @@ listAndDownloadLastSnapshot networkId = do
     [ "--run-mode"
     , networkIdToString networkId
     , "--config-directory"
-    , "cardano-lab/config/mithril/network"
+    , "easy-rider/config/mithril/network"
     , "snapshot"
     , "list"
     , "--json"
@@ -60,7 +60,7 @@ downloadSnapshot networkId snapshot = do
     [ "--run-mode"
     , networkIdToString networkId
     , "--config-directory"
-    , "cardano-lab/config/mithril/network"
+    , "easy-rider/config/mithril/network"
     , "snapshot"
     , "download"
     , sn

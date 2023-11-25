@@ -19,9 +19,9 @@ runHydra = do
  where
   runHydraCmd =
     [ "--node-id"
-    , "cardano-lab-node-1"
+    , "easy-rider-node-1"
     , "--ledger-protocol-parameters"
-    , "cardano-lab/config/protocol-parameters.json"
+    , "easy-rider/config/protocol-parameters.json"
     , "--node-socket"
     , "db/node.socket"
     , "--testnet-magic"

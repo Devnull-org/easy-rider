@@ -20,16 +20,16 @@ parseCommand :: IO Command
 parseCommand = getArgs <&> parseCommandFromArgs >>= handleParseResult
 
 parseCommandFromArgs :: [String] -> ParserResult Command
-parseCommandFromArgs = execParserPure defaultPrefs cardanoLabCommand
+parseCommandFromArgs = execParserPure defaultPrefs easyRiderCommand
 
-cardanoLabCommand :: ParserInfo Command
-cardanoLabCommand =
+easyRiderCommand :: ParserInfo Command
+easyRiderCommand =
   info
     ( commandParser
         <**> helper
     )
     ( fullDesc
-        <> progDesc "Cardano Lab"
+        <> progDesc "Easy Rider"
         <> header "Makes it easy to build on Cardano TM"
     )
 

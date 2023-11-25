@@ -11,25 +11,40 @@
 
 # Easy Rider 
 
-This project aims to ease the life of cardano developers in the wild. Cardano
-is hard to work with and the goal is to make it just a little bit approachable,
-and do that step by step.
+This project aims to ease the pain of running the cardano-node. It is advised
+to user mithril-client to download the snapshot from which it is a lot faster
+to bootstrap cardano-node. Easy Rider merges these two steps into one and
+provides options to run cardano-node on all three networks: mainnet, preprod or
+preview.
 
+### Usage 
+
+You can download Easy Rider binary from the release
+(page)[https://github.com/Devnull-org/easy-rider/releases].
+
+Run the `--help` to view available network options.
+
+```
+
+easy-rider run-node --help
+
+```
+
+Once started `easy-rider` will use `mithril-client` under the hood to download
+and verify cardano snapshot and then start the cardano-node. 
 
 ### Goals
 
 - [x] Run cardano-node and sync it as fast as possible
 - [ ] Provide option to submit a transaction to local running cardano-node 
-- [ ] Run cardano-node and sync it as fast as possible
+- [ ] Run Hydra 
 
 ### Tasks
 
 - [x] Use mithril to speed up the node sync time
 - [x] Run local cardano-node on specified network 
-- [ ] Use proper logging library 
-- [ ] Set up CI server
 
-### Developing 
+### For dApp builders 
 
 If you use nix (hopefully) then using this app is a breeze since you have all
 of the dependencies in scope in a nix shell. 
@@ -37,9 +52,9 @@ of the dependencies in scope in a nix shell.
 ```bash
 nix develop
 
-cabal run cardano-lab
+cabal run easy-rider
 ```
 
 If you don't use nix then you need to provide the dependencies yourself. The
-app depends on `mithril-client 0.3.32`, `cardano-node 8.1.2`,  `ghc 9.2.8` and
+app depends on `mithril-client 2337.0`, `cardano-node 8.1.2`,  `ghc 9.2.8` and
 `cabal 3.0`.

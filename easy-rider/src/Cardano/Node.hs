@@ -130,7 +130,7 @@ cardanoModeParams = CardanoModeParams $ EpochSlots defaultByronEpochSlots
 
 networkIdToNodeConfigPath :: FilePath -> NetworkId -> FilePath
 networkIdToNodeConfigPath cwd network =
-  let basePath = cwd </> "cardano-lab" </> "config" </> "cardano-configurations" </> "network"
+  let basePath = cwd </> "easy-rider" </> "config" </> "cardano-configurations" </> "network"
    in case network of
         Cardano.Api.Mainnet -> basePath </> "mainnet" </> "cardano-node"
         Testnet (NetworkMagic 1) -> basePath </> "preprod" </> "cardano-node"

@@ -1,32 +1,33 @@
-{ cardanoLabProject
+{ easyRiderProject
 , system ? builtins.currentSystem
 , pkgs
 , cardano-node
 , mithril 
-, hydra-node
 }:
 let
-  nativePkgs = cardanoLabProject.hsPkgs;
+  nativePkgs = easyRiderProject.hsPkgs;
   # Allow reinstallation of terminfo as it's not installed with cross compilers.
-  patchedForCrossProject = cardanoLabProject.hsPkgs.appendModule
+  patchedForCrossProject = easyRiderProject.hsPkgs.appendModule
     ({ lib, ... }: { options.nonReinstallablePkgs = lib.mkOption { apply = lib.remove "terminfo"; }; });
   musl64Pkgs = patchedForCrossProject.projectCross.musl64.hsPkgs;
 in
 rec {
-  cardano-lab = nativePkgs.cardano-lab.components.exes.cardano-lab;
+  easy-rider = nativePkgs.easy-rider.components.exes.easy-rider;
+
+  easy-rider-static = musl64Pkgs.easy-rider.components.exes.easy-rider;
 
   tests = {
-    cardano-lab = pkgs.mkShellNoCC {
-      name = "cardano-lab-tests";
-      buildInputs = [ nativePkgs.cardano-lab.components.tests.tests ];
+    easy-rider-tests = pkgs.mkShellNoCC {
+      name = "easy-rider-tests";
+      buildInputs = [ nativePkgs.easy-rider.components.tests.tests ];
     };
   };
 
-  haddocks = pkgs.runCommand "cardano-lab-haddocks"
+  haddocks = pkgs.runCommand "easy-rider-haddocks"
     {
       paths = [
-        cardanoLabProject.hsPkgs.cardano-lab.components.library.doc
-        cardanoLabProject.hsPkgs.cardano-lab.components.tests.tests.doc
+        easyRiderProject.hsPkgs.easy-rider.components.library.doc
+        easyRiderProject.hsPkgs.easy-rider.components.tests.tests.doc
       ];
     }
     ''

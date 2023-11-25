@@ -1,13 +1,13 @@
 {
   withoutDevTools ? false
-, cardanoLabProject
+, easyRiderProject
 , cardano-node
 , mithril
 , hydra-node
 , system ? builtins.currentSystem
 }:
 let
-  inherit (cardanoLabProject) compiler pkgs hsPkgs;
+  inherit (easyRiderProject) compiler pkgs hsPkgs;
 
   cardano-node-pkgs = cardano-node.packages.${system};
   mithril-pkgs = mithril.packages.${system};
@@ -33,11 +33,18 @@ let
 
   buildInputs = [
     pkgs.git
-    pkgs.pkgconfig
+    pkgs.pkg-config
     cabal
+    (pkgs.haskell-nix.tool compiler "cabal-plan" "latest")
     pkgs.haskellPackages.hspec-discover
-    pkgs.haskellPackages.cabal-plan
-    pkgs.python3Packages.jsonschema
+    # Formatting
+    pkgs.treefmt
+    (pkgs.haskell-nix.tool compiler "fourmolu" "0.13.0.0")
+    (pkgs.haskell-nix.tool compiler "cabal-fmt" "0.1.7")
+    pkgs.nixpkgs-fmt
+    # For validating JSON instances against a pre-defined schema
+    pkgs.check-jsonschema
+
     cardano-node-pkgs.cardano-node
     mithril-pkgs.mithril-client
     hydra-node-pkgs.hydra-node
@@ -54,12 +61,13 @@ let
     cardano-node-pkgs.cardano-cli
     mithril-pkgs.mithril-client
     hydra-node-pkgs.hydra-node
+    hsPkgs.easy-rider.components.exes.easy-rider
   ];
 
   haskellNixShell = hsPkgs.shellFor {
-    packages = ps: with ps; [
-      cardano-lab 
-    ];
+    # packages = ps: with ps; [
+    #   easy-rider 
+    # ];
 
     buildInputs = libs ++ buildInputs ++ devInputs;
 
@@ -80,9 +88,10 @@ let
     name = "cabal-shell";
 
     buildInputs = libs ++ [
+      hsPkgs.easy-rider.components.exes.easy-rider
       pkgs.haskell-nix.compiler.${compiler}
       pkgs.cabal-install
-      pkgs.pkgconfig
+      pkgs.pkg-config
     ] ++ buildInputs ++ devInputs;
 
     # Ensure that libz.so and other libraries are available to TH splices.
@@ -102,10 +111,10 @@ let
     name = "exe-shell";
 
     buildInputs = [
+      hsPkgs.easy-rider.components.exes.easy-rider
       cardano-node-pkgs.cardano-node
       mithril-pkgs.mithril-client
       hydra-node-pkgs.hydra-node
-      hsPkgs.cardano-lab.components.exes.cardano-lab
     ];
   };
 in

@@ -9,15 +9,23 @@ let
   pkgs = import nixpkgs {
     inherit system;
     overlays = [
-      haskellNix.overlay
+      # This overlay contains libsodium and libblst libraries
       iohk-nix.overlays.crypto
+      # This overlay contains pkg-config mappings via haskell.nix to use the
+      # crypto libraries above
+      iohk-nix.overlays.haskell-nix-crypto
+      # Keep haskell.nix as the last overlay!
+      #
+      # Reason: haskell.nix modules/overlays neds to be last
+      # https://github.com/input-output-hk/haskell.nix/issues/1954
+      haskellNix.overlay
     ];
   };
 
   hsPkgs = pkgs.haskell-nix.project {
     src = pkgs.haskell-nix.haskellLib.cleanSourceWith {
-      name = "cardano-lab";
-      src = ./../..;
+      name = "easyRider";
+      src = ./..;
       filter = path: type:
         builtins.all (x: baseNameOf path != x) [
           "flake.nix"
@@ -33,7 +41,7 @@ let
 
     modules = [
       {
-        packages.cardano-lab.dontStrip = false;
+        packages.easy-rider.dontStrip = false;
       }
       ({ pkgs, lib, ... }:
         {

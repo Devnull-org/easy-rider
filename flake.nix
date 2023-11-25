@@ -10,7 +10,7 @@
       flake = false;
     };
     cardano-node.url = "github:input-output-hk/cardano-node/8.1.2";
-    mithril.url = "github:input-output-hk/mithril/2329.0";
+    mithril.url = "github:input-output-hk/mithril/2337.0";
     hydra-node.url = "github:input-output-hk/hydra-node/0.13.0";
   };
 
@@ -29,25 +29,29 @@
       (system:
       let
         pkgs = import inputs.nixpkgs { inherit system; };
-        cardanoLabProject = import ./nix/cardano-lab/project.nix {
-          inherit (inputs) haskellNix iohk-nix CHaP;
+
+        easyRiderProject = import ./nix/project.nix {
+          inherit (inputs) haskellNix iohk-nix CHaP ;
           inherit system nixpkgs;
         };
-        cardanoLabPackages = import ./nix/cardano-lab/packages.nix {
-          inherit cardanoLabProject system pkgs cardano-node mithril;
+
+        easyRiderPackages = import ./nix/packages.nix {
+          inherit easyRiderProject system pkgs cardano-node mithril;
         };
+
         prefixAttrs = s: attrs:
           with pkgs.lib.attrsets;
           mapAttrs' (name: value: nameValuePair (s + name) value) attrs;
       in
       rec {
-        inherit cardanoLabProject;
+        inherit easyRiderProject;
 
-        packages = cardanoLabPackages;
+        packages =
+          { default = easyRiderPackages.easy-rider; } // easyRiderPackages;
 
-        devShells = (import ./nix/cardano-lab/shell.nix {
+        devShells = (import ./nix/shell.nix {
           inherit (inputs) cardano-node mithril hydra-node;
-          inherit cardanoLabProject system;
+          inherit easyRiderProject system;
         }); 
       });
 
