@@ -16,7 +16,8 @@ result*
 
 # Direnv
 .direnv/*
-*~
+snapshot-*
+db/*
 
 # hydra-node
 .history
