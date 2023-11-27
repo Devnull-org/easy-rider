@@ -26,12 +26,20 @@ Run the `--help` to view available network options.
 
 ```
 
-easy-rider run-node --help
+./easy-rider run-node --help
 
 ```
 
 Once started `easy-rider` will use `mithril-client` under the hood to download
-and verify cardano snapshot and then start the cardano-node. 
+and verify cardano snapshot and then start the cardano-node. The easiest is to
+start the binary from the location of the cloned repo since needed
+configuration files for mithril and cardano-node are already there.
+
+When you start `easy-rider` it will use `mithril` to download, verify and
+unpack the snapshot into a `db` folder. If the `db` folder is present at the
+root of the project `easy-rider` will **NOT** run `mithril`. It will assume
+your db is already in sync so you need to make sure to use the same network
+again or delete the `db` folder.
 
 ### Goals
 
