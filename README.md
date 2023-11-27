@@ -12,7 +12,7 @@
 # Easy Rider 
 
 This project aims to ease the pain of running the cardano-node. It is advised
-to user mithril-client to download the snapshot from which it is a lot faster
+to use mithril-client to download the snapshot from which it is a lot faster
 to bootstrap cardano-node. Easy Rider merges these two steps into one and
 provides options to run cardano-node on all three networks: mainnet, preprod or
 preview.
