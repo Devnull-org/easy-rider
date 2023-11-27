@@ -7,6 +7,7 @@ import Cardano.Prelude
 import Cardano.Mithril
 import Cardano.Node
 import Options
+import System.Directory (doesDirectoryExist)
 
 main :: IO ()
 main = do
@@ -18,6 +19,9 @@ main = do
               { naNetworkId = networkId
               , naNodeSocket = "./."
               }
-
-      listAndDownloadLastSnapshot networkId
-      runCardanoNode nodeArguments
+      dbExists <- doesDirectoryExist "./db"
+      if dbExists
+        then runCardanoNode nodeArguments
+        else do
+          listAndDownloadLastSnapshot networkId
+          runCardanoNode nodeArguments

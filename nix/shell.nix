@@ -61,7 +61,6 @@ let
     cardano-node-pkgs.cardano-cli
     mithril-pkgs.mithril-client
     hydra-node-pkgs.hydra-node
-    hsPkgs.easy-rider.components.exes.easy-rider
   ];
 
   haskellNixShell = hsPkgs.shellFor {

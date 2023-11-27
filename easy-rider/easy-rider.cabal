@@ -87,6 +87,7 @@ executable easy-rider-exe
   other-modules:
   build-depends:
     , cardano-prelude
+    , directory
     , easy-rider
 
   ghc-options:    -threaded -rtsopts -with-rtsopts=-N4
