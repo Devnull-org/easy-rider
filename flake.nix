@@ -39,6 +39,10 @@
           inherit easyRiderProject system pkgs cardano-node mithril;
         };
 
+        easyRiderImages = import ./nix/docker.nix {
+          inherit easyRiderPackages system nixpkgs;
+        };
+
         prefixAttrs = s: attrs:
           with pkgs.lib.attrsets;
           mapAttrs' (name: value: nameValuePair (s + name) value) attrs;
@@ -47,7 +51,11 @@
         inherit easyRiderProject;
 
         packages =
-          { default = easyRiderPackages.easy-rider; } // easyRiderPackages;
+          { default = easyRiderPackages.easy-rider; } //
+          easyRiderPackages //
+          prefixAttrs "docker-" easyRiderImages // {
+            spec = import ./spec { inherit pkgs; };
+          };
 
         devShells = (import ./nix/shell.nix {
           inherit (inputs) cardano-node mithril hydra-node;
