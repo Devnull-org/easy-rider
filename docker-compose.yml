@@ -1,17 +1,38 @@
 version: "3.9"
 
 services:
+  cardano-node:
+    image: ghcr.io/input-output-hk/cardano-node:8.7.3
+    restart: always
+    logging:
+      driver: "journald"
+    volumes:
+       - ./easy-rider/config:/config:ro
+       - ./db/db:/db
+    working_dir: /data
+    environment:
+      - CARDANO_SOCKET_PATH=/db/node.socket      # used by cardano-node
+      - CARDANO_NODE_SOCKET_PATH=/db/node.socket # used by cardano-cli
+    command:
+      [ "run"
+      , "--config", "/config/cardano-configurations/network/preprod/cardano-node/config.json"
+      , "--topology", "/config/cardano-configurations/network/preprod/cardano-node/topology.json"
+      , "--database-path", "/db"
+      ]
+
   easy-rider:
     image: easy-rider:latest 
     restart: always
     logging:
       driver: "journald"
     volumes:
-      - ./easy-rider/config:/config:ro
-      - ./db:/db
+       - ./easy-rider/config:/config:ro
+       - ./db:/db
+    depends_on:
+      cardano-node:
+        condition: service_completed_successfully
     command:
-      [ "run-node", ""
-      , "--testnet-magic", "1"
+      [ "run-node" , "--testnet-magic", "2"
       ]
     networks:
       easy_rider:
