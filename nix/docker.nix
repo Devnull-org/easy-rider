@@ -11,7 +11,7 @@ in
     tag = "latest";
     created = "now";
     config = {
-      Entrypoint = [ "${easyRiderPackages.easy-rider-static}/bin/easy-rider" ];
+      Entrypoint = [ "${easyRiderPackages.easy-rider}/bin/easy-rider-exe" ];
     };
   };
 
