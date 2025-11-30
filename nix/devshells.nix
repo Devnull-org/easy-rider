@@ -7,7 +7,7 @@
   inherit (pkgs) lib;
   internal = inputs.self.internal.${pkgs.system};
 in {
-  name = "run-cardano-node";
+  name = "build-on-cardano";
 
   imports = [
     "${inputs.devshell}/extra/language/c.nix"
@@ -15,7 +15,6 @@ in {
   ];
 
   commands = [
-    {package = inputs.self.formatter.${pkgs.system};}
     {
       name = "cardano-node";
       package = internal.cardano-node;

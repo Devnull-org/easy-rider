@@ -54,7 +54,7 @@ in
     # For better caching:
     cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 
-    packageName = "run-cardano-node"; 
+    packageName = "build-on-cardano"; 
 
     GIT_REVISION = inputs.self.rev or "dirty";
 
@@ -254,7 +254,7 @@ in
         '';
 
 
-    releaseBaseUrl = "https://github.com/v0d1ch/run-cardano-node/releases/download/${package.version}";
+    releaseBaseUrl = "https://github.com/v0d1ch/build-on-cardano/releases/download/${package.version}";
 
     # This works for both Linux and Darwin, but we mostly use it on Linux:
     curl-bash-install =

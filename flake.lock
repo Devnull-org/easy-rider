@@ -1,37 +1,5 @@
 {
   "nodes": {
-    "advisory-db": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1764406324,
-        "narHash": "sha256-hzOelvGsn8AQSAt91UFE4s9PdgI6DFaN8Z/7W2LBMu0=",
-        "owner": "rustsec",
-        "repo": "advisory-db",
-        "rev": "6901f3cd082141c9c853d556735235feeeca2306",
-        "type": "github"
-      },
-      "original": {
-        "owner": "rustsec",
-        "repo": "advisory-db",
-        "type": "github"
-      }
-    },
-    "blockfrost-tests": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1764333540,
-        "narHash": "sha256-cws0JEWhBHz2ALbK2Sw/BCXtU6skAbHfmcZAmbd+6Ps=",
-        "owner": "blockfrost",
-        "repo": "blockfrost-tests",
-        "rev": "000486b84fa2ce6053a1f39063cc0c7523655cbe",
-        "type": "github"
-      },
-      "original": {
-        "owner": "blockfrost",
-        "repo": "blockfrost-tests",
-        "type": "github"
-      }
-    },
     "cardano-node": {
       "flake": false,
       "locked": {
@@ -290,23 +258,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-nsis": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1547508252,
-        "narHash": "sha256-ivcmGg01aeeod0rzjMJ86exUNHHRJu4526rGq9s7rJU=",
-        "owner": "input-output-hk",
-        "repo": "nixpkgs",
-        "rev": "be445a9074f139d63e704fa82610d25456562c3d",
-        "type": "github"
-      },
-      "original": {
-        "owner": "input-output-hk",
-        "repo": "nixpkgs",
-        "rev": "be445a9074f139d63e704fa82610d25456562c3d",
-        "type": "github"
-      }
-    },
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1764242076,
@@ -325,8 +276,6 @@
     },
     "root": {
       "inputs": {
-        "advisory-db": "advisory-db",
-        "blockfrost-tests": "blockfrost-tests",
         "cardano-node": "cardano-node",
         "cardano-playground": "cardano-playground",
         "crane": "crane",
@@ -337,9 +286,7 @@
         "flake-parts": "flake-parts",
         "mithril": "mithril",
         "nix-bundle-exe": "nix-bundle-exe",
-        "nixpkgs": "nixpkgs_2",
-        "nixpkgs-nsis": "nixpkgs-nsis",
-        "treefmt-nix": "treefmt-nix_2"
+        "nixpkgs": "nixpkgs_2"
       }
     },
     "rust-analyzer-src": {
@@ -372,26 +319,6 @@
         "owner": "numtide",
         "repo": "treefmt-nix",
         "rev": "1f3f7b784643d488ba4bf315638b2b0a4c5fb007",
-        "type": "github"
-      },
-      "original": {
-        "owner": "numtide",
-        "repo": "treefmt-nix",
-        "type": "github"
-      }
-    },
-    "treefmt-nix_2": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1762938485,
-        "narHash": "sha256-AlEObg0syDl+Spi4LsZIBrjw+snSVU4T8MOeuZJUJjM=",
-        "owner": "numtide",
-        "repo": "treefmt-nix",
-        "rev": "5b4ee75aeefd1e2d5a1cc43cf6ba65eba75e83e4",
         "type": "github"
       },
       "original": {
