@@ -22,11 +22,11 @@ in
 
     craneLib = (inputs.crane.mkLib pkgs).overrideToolchain rustPackages.toolchain;
 
-    src = craneLib.cleanCargoSource ../../.;
+    # src = craneLib.cleanCargoSource ../../.;
 
     commonArgs =
       {
-        inherit src;
+        # inherit src;
         strictDeps = true;
         nativeBuildInputs = lib.optionals pkgs.stdenv.isLinux [
           pkgs.pkg-config
@@ -54,9 +54,7 @@ in
     # For better caching:
     cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 
-    packageName = "run-cardano-node"; # (craneLib.crateNameFromCargoToml {cargoToml = builtins.path {path = src + "/Cargo.toml";};}).pname;
-
-    # cargoToml = builtins.fromTOML (builtins.readFile (builtins.path {path = src + "/Cargo.toml";}));
+    packageName = "run-cardano-node"; 
 
     GIT_REVISION = inputs.self.rev or "dirty";
 
@@ -71,44 +69,8 @@ in
           ln -sf $out/libexec/${packageName} $out/bin/
         '';
         meta = {};
-        #   mainProgram = packageName;
-        #   license =
-        #     if cargoToml.package.license == "Apache-2.0"
-        #     then lib.licenses.asl20
-        #     else throw "unknown license in Cargo.toml: ${cargoToml.package.license}";
-        #   inherit (cargoToml.package) description homepage;
-        # };
       });
 
-    cargoChecks = {
-      cargo-clippy = craneLib.cargoClippy (commonArgs
-        // {
-          inherit cargoArtifacts GIT_REVISION;
-          # Maybe also add `--deny clippy::pedantic`?
-          cargoClippyExtraArgs = "--all-targets --all-features -- --deny warnings";
-        });
-
-      cargo-doc = craneLib.cargoDoc (commonArgs
-        // {
-          inherit cargoArtifacts GIT_REVISION;
-          RUSTDOCFLAGS = "-D warnings";
-        });
-
-      cargo-audit = craneLib.cargoAudit {
-        inherit src;
-        inherit (inputs) advisory-db;
-      };
-
-      cargo-deny = craneLib.cargoDeny {
-        inherit src;
-      };
-
-      cargo-test = craneLib.cargoNextest (commonArgs
-        // {
-          inherit cargoArtifacts GIT_REVISION;
-          cargoNextestExtraArgs = "--lib";
-        });
-    };
 
     nixChecks = {
       nix-statix =
@@ -459,152 +421,4 @@ in
       ''
       // {meta.description = "Runs Dolos on ${network}";};
 
-    blockfrost-tests = make-blockfrost-tests "preview";
-
-    make-blockfrost-tests = network: let
-      inherit (pkgs) nodePackages;
-    in
-      pkgs.writeShellApplication {
-        name = "blockfrost-tests";
-        meta.description = "Runs `blockfrost-tests` on `${network}` against this repository";
-        runtimeInputs = with pkgs; [
-          bash
-          coreutils
-          nodePackages.nodejs
-          nodePackages.yarn
-          curl
-          jq
-          (python3.withPackages (ps: with ps; [portpicker]))
-          wait4x
-        ];
-        text = ''
-          set -euo pipefail
-
-          if [[ -z ''${DOLOS_ENDPOINT+x} ]]; then
-            export DOLOS_ENDPOINT="http://127.0.0.1:3010"
-            echo >&2 "warning: DOLOS_ENDPOINT is unset; assuming $DOLOS_ENDPOINT"
-          fi
-
-          curl -fsSL "''${DOLOS_ENDPOINT}" | jq -r '"Running Dolos " + .version + " (" + .revision + ")"'
-
-          err() { printf "error: %s\n" "$1" >&2; }
-
-          platform_pid=""
-          tmpdir="$(mktemp -d)"
-          cleanup() {
-            cd / && [[ -d "$tmpdir" ]] && rm -rf -- "$tmpdir"
-            if [[ -n "$platform_pid" ]] && kill -0 "$platform_pid"; then
-              kill -TERM "$platform_pid"
-              wait "$platform_pid"
-            fi
-          }
-          trap cleanup EXIT HUP INT TERM
-
-          require_env() {
-            local name="$1"
-            local val="''${!name-}"
-            if [[ -z "$val" ]]; then
-              err "$name is not set."
-              missing=1
-            fi
-          }
-          missing=0
-          for v in PROJECT_ID SUBMIT_MNEMONIC ; do
-            require_env "$v"
-          done
-          if (( missing )); then
-            exit 1
-          fi
-
-          export NETWORK=${lib.escapeShellArg network}
-
-          platform_port=$(python3 -m portpicker)
-
-          ${lib.getExe package} \
-            --server-address 127.0.0.1 \
-            --server-port "$platform_port" \
-            --log-level info \
-            --node-socket-path "''${CARDANO_NODE_SOCKET_PATH:-/run/cardano-node/node.socket}" \
-            --mode compact \
-            --solitary \
-            --dolos-endpoint "''${DOLOS_ENDPOINT}" \
-            --dolos-timeout-sec 30 \
-            &
-          platform_pid=$!
-
-          export SERVER_URL="http://127.0.0.1:$platform_port"
-
-          sleep 1
-          wait4x http "$SERVER_URL" --expect-status-code 200 --timeout 60s --interval 1s
-
-          cp -r ${inputs.blockfrost-tests}/. "$tmpdir"/.
-          chmod -R u+w,g+w "$tmpdir"
-          cd "$tmpdir"
-          cat ${../../tests/data/supported_endpoints.json} >endpoints-allowlist.json
-
-          set -x
-          node --version
-          yarn --version
-
-          yarn install
-          yarn test:preview
-        '';
-      };
-
-    # One degree of indirection for the devshell – we don’t want to compile
-    # `blockfrost-platform` on each devshell reload.
-    run-blockfrost-tests =
-      pkgs.writeShellScriptBin "test-blockfrost-tests" ''
-        set -euo pipefail
-        exec nix run -L $PRJ_ROOT#internal.${pkgs.system}.${blockfrost-tests.name}
-      ''
-      // {
-        meta.description = blockfrost-tests.meta.description;
-      };
-
-    hydra-flake = (import inputs.flake-compat {src = inputs.hydra;}).defaultNix;
-
-    hydraVersion = hydra-flake.legacyPackages.${targetSystem}.hydra-node.identifier.version;
-
-    hydraNetworksJson = builtins.path {
-      path = hydra-flake + "/hydra-node/networks.json";
-    };
-
-    hydra-node = lib.recursiveUpdate hydra-flake.packages.${targetSystem}.hydra-node {
-      meta.description = "Layer 2 scalability solution for Cardano";
-    };
-
-    hydra-test = pkgs.writeShellApplication {
-      name = "test-hydra-against-blockfrost";
-      meta.description = "Tests a small Hydra cluster, with one member opening head against the Blockfrost API";
-      runtimeInputs = with pkgs; [
-        bash
-        coreutils
-        gnused
-        gnugrep
-        gawk
-        jq
-        curl
-        hydra-node
-        cardano-cli
-        cardano-address
-        (python3.withPackages (ps: with ps; [portpicker]))
-        wait4x
-        websocat
-        etcd
-      ];
-      runtimeEnv = rec {
-        NETWORK = "preview";
-        CARDANO_NODE_NETWORK_ID =
-          {
-            mainnet = "mainnet";
-            preprod = 1;
-            preview = 2;
-          }.${
-            NETWORK
-          };
-        HYDRA_SCRIPTS_TX_ID = (builtins.fromJSON (builtins.readFile hydraNetworksJson)).${NETWORK}.${hydraVersion};
-      };
-      text = builtins.readFile ./hydra-blockfrost-test.sh;
-    };
   }

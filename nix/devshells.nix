@@ -32,15 +32,6 @@ in {
       name = "cardano-address";
       package = internal.cardano-address;
     }
-    {package = internal.dolos;}
-    {package = internal.mithril-client;}
-    {package = pkgs.cargo-nextest;}
-    {package = pkgs.cargo-tarpaulin;}
-    {
-      name = "cargo";
-      package = internal.rustPackages.cargo;
-    }
-    {package = internal.rustPackages.rust-analyzer;}
     {
       category = "handy";
       package = internal.runNode "preview";
@@ -64,10 +55,6 @@ in {
     {
       category = "handy";
       package = internal.runDolos "mainnet";
-    }
-    {
-      category = "handy";
-      package = internal.run-blockfrost-tests;
     }
   ];
 
@@ -106,7 +93,6 @@ in {
     packages =
       [
         pkgs.unixtools.xxd
-        internal.rustPackages.clippy
         pkgs.websocat
       ]
       ++ lib.optionals pkgs.stdenv.isLinux [
@@ -121,7 +107,6 @@ in {
       {202}🔨 Welcome to ${config.name}{reset}
       $(menu)
 
-      You can now run ‘{bold}cargo run{reset}’.
     '';
 
     startup.symlink-configs.text = ''
