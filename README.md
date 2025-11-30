@@ -1,11 +1,11 @@
-# Build on Cardano
+# Easy Rider
 
 ```nix
 
 nix develop
 
 
-[build-on-cardano]$ 
+[easy-rider]$ 
 
 [[general commands]]
 

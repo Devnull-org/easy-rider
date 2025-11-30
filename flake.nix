@@ -41,11 +41,11 @@
         packages =
           {
             default = internal.package;
-            build-on-cardano = internal.package;
+            easy-rider = internal.package;
             inherit (internal) tx-build cardano-address;
           }
           // (lib.optionalAttrs (system == "x86_64-linux") {
-            build-on-cardano-platform-x86_64-windows = inputs.self.internal.x86_64-windows.package;
+            easy-rider-platform-x86_64-windows = inputs.self.internal.x86_64-windows.package;
           });
 
         devshells.default = import ./nix/devshells.nix {inherit inputs;};
@@ -69,7 +69,7 @@
           ...
         }: {
           imports = [./nix/nixos];
-          services.build-on-cardano.package = lib.mkDefault inputs.self.packages.${pkgs.system}.build-on-cardano;
+          services.easy-rider.package = lib.mkDefault inputs.self.packages.${pkgs.system}.easy-rider;
         };
 
 

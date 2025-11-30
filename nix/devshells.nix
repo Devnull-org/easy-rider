@@ -7,7 +7,7 @@
   inherit (pkgs) lib;
   internal = inputs.self.internal.${pkgs.system};
 in {
-  name = "build-on-cardano";
+  name = "easy-rider";
 
   imports = [
     "${inputs.devshell}/extra/language/c.nix"
