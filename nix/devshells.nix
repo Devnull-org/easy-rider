@@ -67,11 +67,6 @@ in {
     }
     {
       category = "handy";
-      name = "testgen-hs";
-      package = internal.testgen-hs;
-    }
-    {
-      category = "handy";
       package = internal.run-blockfrost-tests;
     }
   ];
@@ -92,10 +87,6 @@ in {
 
   env =
     [
-      {
-        name = "TESTGEN_HS_PATH";
-        value = lib.getExe internal.testgen-hs;
-      }
     ]
     ++ lib.optionals pkgs.stdenv.isDarwin [
       {

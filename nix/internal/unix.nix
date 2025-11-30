@@ -31,7 +31,6 @@ in
         nativeBuildInputs = lib.optionals pkgs.stdenv.isLinux [
           pkgs.pkg-config
         ];
-        TESTGEN_HS_PATH = lib.getExe testgen-hs; # Don’t try to download it in `build.rs`.
         buildInputs =
           lib.optionals pkgs.stdenv.isLinux [
             pkgs.openssl
@@ -224,10 +223,6 @@ in
       ln -s ${cardano-node-configs} $out/cardano-node-configs
       ln -s ${dolos-configs} $out/dolos-configs
     '';
-
-    testgen-hs-flake = (import inputs.flake-compat {src = inputs.testgen-hs;}).defaultNix;
-
-    testgen-hs = testgen-hs-flake.packages.${targetSystem}.default;
 
     stateDir =
       if pkgs.stdenv.isDarwin

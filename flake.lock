@@ -339,7 +339,6 @@
         "nix-bundle-exe": "nix-bundle-exe",
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-nsis": "nixpkgs-nsis",
-        "testgen-hs": "testgen-hs",
         "treefmt-nix": "treefmt-nix_2"
       }
     },
@@ -357,23 +356,6 @@
         "owner": "rust-lang",
         "ref": "nightly",
         "repo": "rust-analyzer",
-        "type": "github"
-      }
-    },
-    "testgen-hs": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1751542906,
-        "narHash": "sha256-FYz1P11du5tSakpl2ec9CGdwEB5h+0FcdGPU3zXte60=",
-        "owner": "input-output-hk",
-        "repo": "testgen-hs",
-        "rev": "7d58736ed578a9ccf8337376b302bb188b74303f",
-        "type": "github"
-      },
-      "original": {
-        "owner": "input-output-hk",
-        "ref": "10.4.1.1",
-        "repo": "testgen-hs",
         "type": "github"
       }
     },
