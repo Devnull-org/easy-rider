@@ -11,7 +11,6 @@ in {
 
   imports = [
     "${inputs.devshell}/extra/language/c.nix"
-    "${inputs.devshell}/extra/language/rust.nix"
   ];
 
   commands = [
@@ -43,18 +42,6 @@ in {
       category = "handy";
       package = internal.runNode "mainnet";
     }
-    {
-      category = "handy";
-      package = internal.runDolos "preview";
-    }
-    {
-      category = "handy";
-      package = internal.runDolos "preprod";
-    }
-    {
-      category = "handy";
-      package = internal.runDolos "mainnet";
-    }
   ];
 
   language.c = {
@@ -65,28 +52,7 @@ in {
     includes = internal.commonArgs.buildInputs;
   };
 
-  language.rust = {
-    packageSet = internal.rustPackages;
-    tools = ["cargo" "rustfmt"]; # The rest is provided below.
-    enableDefaultToolchain = true;
-  };
-
-  env =
-    [
-    ]
-    ++ lib.optionals pkgs.stdenv.isDarwin [
-      {
-        name = "LIBCLANG_PATH";
-        value = internal.commonArgs.LIBCLANG_PATH;
-      }
-    ]
-    ++ lib.optionals pkgs.stdenv.isLinux [
-      # Embed `openssl` in `RPATH`:
-      {
-        name = "RUSTFLAGS";
-        eval = ''"-C link-arg=-Wl,-rpath,$(pkg-config --variable=libdir openssl)"'';
-      }
-    ];
+  env = [];
 
   devshell = {
     packages =
@@ -109,10 +75,6 @@ in {
     '';
 
     startup.symlink-configs.text = ''
-      for old_link in cardano-node-configs dolos-configs ; do
-        if [[ -L "$PRJ_ROOT/$old_link" ]] ; then rm -- "$PRJ_ROOT/$old_link" ; fi
-      done
-
       ln -sfn ${internal.generated-dir} "$PRJ_ROOT/generated"
     '';
   };

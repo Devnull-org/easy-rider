@@ -18,11 +18,8 @@ assert builtins.elem targetSystem ["x86_64-linux" "aarch64-linux" "aarch64-darwi
     ) {inherit inputs targetSystem unix;};
 in
   extendForTarget rec {
-    rustPackages = inputs.fenix.packages.${pkgs.system}.stable;
 
-    craneLib = (inputs.crane.mkLib pkgs).overrideToolchain rustPackages.toolchain;
-
-    # src = craneLib.cleanCargoSource ../../.;
+    packageName = "easy-rider"; 
 
     commonArgs =
       {
@@ -41,36 +38,7 @@ in
             pkgs.darwin.apple_sdk_12_3.frameworks.Security
             pkgs.darwin.apple_sdk_12_3.frameworks.CoreFoundation
           ];
-      }
-      // lib.optionalAttrs pkgs.stdenv.isDarwin {
-        # for bindgen, used by libproc, used by metrics_process
-        LIBCLANG_PATH = "${lib.getLib pkgs.llvmPackages.libclang}/lib";
-      }
-      // lib.optionalAttrs pkgs.stdenv.isLinux {
-        # The linker bundled with Fenix has wrong interpreter path, and it fails with ENOENT, so:
-        RUSTFLAGS = "-Clink-arg=-fuse-ld=bfd";
       };
-
-    # For better caching:
-    cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-
-    packageName = "easy-rider"; 
-
-    GIT_REVISION = inputs.self.rev or "dirty";
-
-    package = craneLib.buildPackage (commonArgs
-      // {
-        inherit cargoArtifacts GIT_REVISION;
-        doCheck = false; # we run tests with `cargo-nextest` below
-        postInstall = ''
-          chmod -R +w $out
-          mv $out/bin $out/libexec
-          mkdir -p $out/bin
-          ln -sf $out/libexec/${packageName} $out/bin/
-        '';
-        meta = {};
-      });
-
 
     nixChecks = {
       nix-statix =
@@ -183,7 +151,6 @@ in
     generated-dir = pkgs.runCommand "generated-dir" {} ''
       mkdir -p $out
       ln -s ${cardano-node-configs} $out/cardano-node-configs
-      ln -s ${dolos-configs} $out/dolos-configs
     '';
 
     stateDir =
@@ -254,33 +221,6 @@ in
         '';
 
 
-    releaseBaseUrl = "https://github.com/v0d1ch/easy-rider/releases/download/${package.version}";
-
-    # This works for both Linux and Darwin, but we mostly use it on Linux:
-    curl-bash-install =
-      pkgs.runCommand "curl-bash-install" {
-        nativeBuildInputs = with pkgs; [shellcheck];
-        projectName = packageName;
-        projectVersion = package.version;
-        shortRev = inputs.self.shortRev or "dirty";
-        baseUrl = releaseBaseUrl;
-      } ''
-        sha256_x86_64_linux=$(sha256sum ${inputs.self.hydraJobs.archive.x86_64-linux}/*.tar.* | cut -d' ' -f1)
-        sha256_aarch64_linux=$(sha256sum ${inputs.self.hydraJobs.archive.aarch64-linux}/*.tar.* | cut -d' ' -f1)
-        sha256_x86_64_darwin=$(sha256sum ${inputs.self.hydraJobs.archive.x86_64-darwin}/*.tar.* | cut -d' ' -f1)
-        sha256_aarch64_darwin=$(sha256sum ${inputs.self.hydraJobs.archive.aarch64-darwin}/*.tar.* | cut -d' ' -f1)
-
-        export sha256_x86_64_linux
-        export sha256_aarch64_linux
-        export sha256_x86_64_darwin
-        export sha256_aarch64_darwin
-
-        mkdir -p $out
-        substituteAll ${./curl-bash-install.sh} $out/curl-bash-install.sh
-        chmod +x $out/*.sh
-        shellcheck $out/*.sh
-      '';
-
     mithril-client = inputs.mithril.packages.${targetSystem}.mithril-client-cli;
 
     mithrilGenesisVerificationKeys = {
@@ -300,125 +240,5 @@ in
       preprod = "https://aggregator.release-preprod.api.mithril.network/aggregator";
       mainnet = "https://aggregator.release-mainnet.api.mithril.network/aggregator";
     };
-
-    dolos = craneLib.buildPackage (
-      {
-        src = inputs.dolos;
-        GIT_REVISION = inputs.dolos.rev;
-        strictDeps = true;
-        nativeBuildInputs =
-          [pkgs.gnum4]
-          ++ lib.optionals pkgs.stdenv.isLinux [
-            pkgs.pkg-config
-          ];
-        buildInputs =
-          lib.optionals pkgs.stdenv.isLinux [
-            pkgs.openssl
-          ]
-          ++ lib.optionals pkgs.stdenv.isDarwin [
-            pkgs.libiconv
-            pkgs.darwin.apple_sdk_12_3.frameworks.SystemConfiguration
-            pkgs.darwin.apple_sdk_12_3.frameworks.Security
-            pkgs.darwin.apple_sdk_12_3.frameworks.CoreFoundation
-          ];
-        doCheck = false; # some unit tests seem to require network access, so they’re failing in the sandbox
-        meta = {
-          mainProgram = "dolos";
-          description = "Cardano Data Node";
-        };
-      }
-      // lib.optionalAttrs pkgs.stdenv.isLinux {
-        # The linker bundled with Fenix has wrong interpreter path, and it fails with ENOENT, so:
-        RUSTFLAGS = "-Clink-arg=-fuse-ld=bfd";
-      }
-      // lib.optionalAttrs pkgs.stdenv.isDarwin {
-        # for bindgen, used by libproc, used by metrics_process
-        LIBCLANG_PATH = "${lib.getLib pkgs.llvmPackages.libclang}/lib";
-      }
-    );
-
-    dolos-configs = let
-      networks = ["mainnet" "preprod" "preview"];
-      mkConfig = network: let
-        topology = builtins.fromJSON (builtins.readFile "${cardano-node-configs}/${network}/topology.json");
-        byronGenesis = builtins.fromJSON (builtins.readFile "${cardano-node-configs}/${network}/byron-genesis.json");
-        peerAddr = let first = lib.head topology.bootstrapPeers; in "${first.address}:${toString first.port}";
-        magic = toString byronGenesis.protocolConsts.protocolMagic;
-      in
-        pkgs.writeText "dolos.toml" ''
-          [upstream]
-          peer_address = "${peerAddr}"
-          network_magic = ${magic}
-          is_testnet = ${
-            if network == "mainnet"
-            then "false"
-            else "true"
-          }
-
-          [storage]
-          version = "v1"
-          path = "dolos"
-          max_wal_history = 25920
-
-          [genesis]
-          byron_path = "${cardano-node-configs}/${network}/byron-genesis.json"
-          shelley_path = "${cardano-node-configs}/${network}/shelley-genesis.json"
-          alonzo_path = "${cardano-node-configs}/${network}/alonzo-genesis.json"
-          conway_path = "${cardano-node-configs}/${network}/conway-genesis.json"
-          force_protocol = 6
-
-          [sync]
-          pull_batch_size = 100
-
-          [submit]
-
-          [serve.grpc]
-          listen_address = "[::]:50051"
-          permissive_cors = true
-
-          [serve.ouroboros]
-          listen_path = "dolos.socket"
-          magic = ${magic}
-
-          [serve.minibf]
-          listen_address = "[::]:3010"
-
-          [relay]
-          listen_address = "[::]:30031"
-          magic = ${magic}
-
-          [mithril]
-          aggregator = "${mithrilAggregator.${network}}"
-          genesis_key = "${mithrilGenesisVerificationKeys.${network}}"
-
-          [logging]
-          max_level = "INFO"
-          include_tokio = false
-          include_pallas = false
-          include_grpc = false
-        '';
-    in
-      pkgs.runCommand "dolos-configs" {} ''
-        mkdir -p $out
-        ${lib.concatMapStringsSep "\n" (network: ''
-            mkdir -p $out/${network}
-            cp ${mkConfig network} $out/${network}/dolos.toml
-          '')
-          networks}
-      '';
-
-    runDolos = network:
-      pkgs.writeShellScriptBin "run-dolos-${network}" ''
-        stateDir="$HOME"/${lib.escapeShellArg (stateDir + "/" + network)}
-        mkdir -p "$stateDir"
-        cd "$stateDir"
-        defaultArgs=(daemon)
-        [ "$#" -eq 0 ] && set -- "''${defaultArgs[@]}"
-        set -x
-        exec ${lib.getExe dolos} \
-          --config ${dolos-configs}/${network}/dolos.toml \
-          "$@"
-      ''
-      // {meta.description = "Runs Dolos on ${network}";};
 
   }

@@ -17,9 +17,6 @@ nix develop
 
 [handy]
 
-  run-dolos-mainnet  - Runs Dolos on mainnet
-  run-dolos-preprod  - Runs Dolos on preprod
-  run-dolos-preview  - Runs Dolos on preview
   run-node-mainnet   - Runs cardano-node on mainnet
   run-node-preprod   - Runs cardano-node on preprod
   run-node-preview   - Runs cardano-node on preview

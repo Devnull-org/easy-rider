@@ -10,8 +10,6 @@
     flake-compat.flake = false;
     cardano-node.url = "github:IntersectMBO/cardano-node/10.5.1";
     cardano-node.flake = false; # otherwise, +2k dependencies we don’t really use
-    dolos.url = "github:txpipe/dolos/v1.0.0-beta.5";
-    dolos.flake = false;
     mithril.url = "github:input-output-hk/mithril/2524.0";
     devshell.url = "github:numtide/devshell";
     devshell.inputs.nixpkgs.follows = "nixpkgs";
@@ -40,8 +38,9 @@
       in {
         packages =
           {
-            default = internal.package;
-            easy-rider = internal.package;
+             default = internal.package;
+             easy-rider = internal.package;
+
             inherit (internal) tx-build cardano-address;
           }
           // (lib.optionalAttrs (system == "x86_64-linux") {
@@ -50,7 +49,7 @@
 
         devshells.default = import ./nix/devshells.nix {inherit inputs;};
 
-        checks = internal.cargoChecks // internal.nixChecks;
+        checks = internal.nixChecks;
 
       };
 
@@ -63,21 +62,6 @@
             targetSystem: import ./nix/internal/windows.nix {inherit inputs targetSystem;}
           );
 
-        nixosModule = {
-          pkgs,
-          lib,
-          ...
-        }: {
-          imports = [./nix/nixos];
-          services.easy-rider.package = lib.mkDefault inputs.self.packages.${pkgs.system}.easy-rider;
-        };
-
-
-        nixConfig = {
-          extra-substituters = ["https://cache.iog.io"];
-          extra-trusted-public-keys = ["hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="];
-          allow-import-from-derivation = "true";
-        };
       };
     });
 }
